@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  code_completion:
+    build: .
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./workspace:/app/workspace
+      - ./logs:/app/logs
+    environment:
+      - JAVA_HOME=/app/lsp/java/jdk-21.0.2
+      - JDT_HOME=/app/lsp/java/jdt-language-server-1.36.0
+      - LOG_LEVEL=DEBUG
+    restart: unless-stopped
+    mem_limit: 2g
+    cpus: "1.0"
+    privileged: true
+  

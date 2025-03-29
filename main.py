@@ -139,6 +139,3 @@ async def websocket_endpoint(websocket: WebSocket, interview_id: str):
     finally:
         await manager.cleanup_interview(interview_id)
         logger.info(f"[interview={interview_id}] Cleaned up resources")
-
-if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8001, log_config=None)

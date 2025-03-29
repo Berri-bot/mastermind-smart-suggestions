@@ -963,6 +963,7 @@ jdk/internal/foreign/abi/VMStorage
 jdk/internal/jimage/BasicImageReader
 jdk/internal/jimage/BasicImageReader$1
 jdk/internal/jimage/ImageHeader
+jdk/internal/jimage/ImageLocation
 jdk/internal/jimage/ImageReader
 jdk/internal/jimage/ImageReader$SharedImageReader
 jdk/internal/jimage/ImageReaderFactory
@@ -1138,6 +1139,8 @@ jdk/internal/util/random/RandomSupport
 jdk/internal/vm/Continuation
 jdk/internal/vm/ContinuationScope
 jdk/internal/vm/FillerObject
+jdk/internal/vm/PostVMInitHook
+jdk/internal/vm/PostVMInitHook$1
 jdk/internal/vm/SharedThreadContainer
 jdk/internal/vm/StackChunk
 jdk/internal/vm/StackableScope

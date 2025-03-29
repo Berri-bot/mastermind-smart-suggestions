@@ -13,7 +13,5 @@ services:
       - JDT_HOME=/app/lsp/java/jdt-language-server-1.36.0
       - LOG_LEVEL=DEBUG
     restart: unless-stopped
-    mem_limit: 2g
-    cpus: "1.0"
+    mem_limit: 4g
     privileged: true
-  

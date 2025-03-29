@@ -7,6 +7,7 @@ from pathlib import Path
 class Config:
     def __init__(self):
         self.BASE_DIR = Path(os.path.dirname(os.path.abspath(__file__))).parent
+        self.LOG_FILE = self.BASE_DIR / "logs" / "server.log"
         
         self.JDK_HOME = Path(os.getenv("JAVA_HOME", "/app/lsp/java/jdk-21.0.2"))
         self.JDT_HOME = Path(os.getenv("JDT_HOME", "/app/lsp/java/jdt-language-server-1.36.0"))
@@ -20,6 +21,7 @@ class Config:
         
         # Create required directories
         self.WORKSPACE_DIR.mkdir(parents=True, exist_ok=True)
+        self.LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
         
     def validate(self):
         logger = logging.getLogger(__name__)

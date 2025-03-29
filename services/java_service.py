@@ -192,16 +192,10 @@ class JavaService:
             if compile_result.returncode != 0:
                 return {"output": "", "error": compile_result.stderr}
             
-            # Run with classpath
-            run_cmd = [
-                str(config.JDK_HOME / "bin" / "java"),
-                "-cp",
-                str(self.src_dir),  # Add classpath to src/main/java
-                f"{package}.{class_name}" if package else class_name
-            ]
-            
+            # Run
             run_result = subprocess.run(
-                run_cmd,
+                [str(config.JDK_HOME / "bin" / "java"), 
+                 f"{package}.{class_name}" if package else class_name],
                 cwd=str(self.workspace),
                 capture_output=True,
                 text=True

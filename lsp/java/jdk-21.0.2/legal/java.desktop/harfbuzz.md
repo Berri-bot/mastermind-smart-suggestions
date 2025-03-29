@@ -1,6 +1,8 @@
-## Harfbuzz v8.2.2
+## Harfbuzz v7.2.0
 
 ### Harfbuzz License
+
+https://github.com/harfbuzz/harfbuzz/blob/7.2.0/COPYING
 
 <pre>
 
@@ -12,7 +14,6 @@ Copyright © 2010-2023  Google, Inc.
 Copyright © 2018-2020  Ebrahim Byagowi
 Copyright © 2004-2013  Red Hat, Inc.
 Copyright © 2019  Facebook, Inc.
-Copyright (C) 2012 Zilong Tan (eric.zltan@gmail.com)
 Copyright © 2007  Chris Wilson
 Copyright © 2018-2019 Adobe Inc.
 Copyright © 2006-2023 Behdad Esfahbod
@@ -70,15 +71,6 @@ ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
 WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
 ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-
----------------------------------
-The below license applies to the following files:
-libharfbuzz/hb-unicode-emoji-table.hh
-
-© 2023 Unicode®, Inc.
-Unicode and the Unicode Logo are registered trademarks of Unicode, Inc.
-in the U.S. and other countries.
-For terms of use, see https://www.unicode.org/terms_of_use.html
 
 </pre>
 

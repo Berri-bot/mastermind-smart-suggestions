@@ -33,6 +33,8 @@ ENV JAVA_HOME=/app/lsp/java/jdk-21.0.2
 ENV JDT_HOME=/app/lsp/java/jdt-language-server-1.36.0
 ENV PATH="${JAVA_HOME}/bin:${PATH}"
 
+COPY . .
+
 #Expose port
 EXPOSE 8001
 

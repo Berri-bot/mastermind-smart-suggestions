@@ -54,7 +54,7 @@ async def shutdown():
         manager.shutdown()
         LSPManager.shutdown()
     except Exception as e:
-        logger.error(f"Shutdown error: {str(e)}", exc_info=True)
+        logger.error(f"Shutdown errore: {str(e)}", exc_info=True)
 
 async def process_message(websocket: WebSocket, message: Dict[str, Any], interview_id: str) -> None:
     try:
@@ -137,5 +137,5 @@ async def websocket_endpoint(websocket: WebSocket, interview_id: str):
     except Exception as e:
         logger.error(f"[interview={interview_id}] WebSocket error: {str(e)}", exc_info=True)
     finally:
-        await manager.cleanup_interview(interview_id)
+        manager.cleanup_interview(interview_id)  # Removed await
         logger.info(f"[interview={interview_id}] Cleaned up resources")

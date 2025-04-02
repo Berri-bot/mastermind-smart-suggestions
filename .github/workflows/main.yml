@@ -34,3 +34,24 @@ jobs:
 
           docker build -t $IMAGE .
           docker push $IMAGE
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.ACTIONS_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+
+      - name: Clone k8s-migrations Repository
+        run: |
+          git clone --branch main git@github.com:berri-bot/k8s-migrations.git k8s-migrations
+          cd k8s-migrations
+          git branch -r
+
+      - name: Deploy to Kubernetes
+        run: |
+          export TAG_IMAGE_CLIENT=${{ github.run_id }}
+          export PROJECT_ID=demopostrecruitmentjoinin-fkyn
+
+          ./k8s-migrations/web/dev/k8s_connect.sh
+          ./k8s-migrations/web/dev/mastermind-smart-suggestions/deploy_server.sh

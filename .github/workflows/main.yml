@@ -30,7 +30,7 @@ jobs:
         run: |
           export PROJECT_ID=demopostrecruitmentjoinin-fkyn
           export IMAGE_TAG=${{ github.run_id }}
-          export IMAGE=gcr.io/$PROJECT_ID/mastermind-smart-suggestions:$IMAGE_TAG
+          export IMAGE=gcr.io/$PROJECT_ID/mastermind-suggestion:$IMAGE_TAG
 
           docker build -t $IMAGE .
           docker push $IMAGE
@@ -52,8 +52,8 @@ jobs:
 
       - name: Deploy to Kubernetes
         run: |
-          export TAG_IMAGE_CLIENT=${{ github.run_id }}
+          export TAG_IMAGE_WORKER=${{ github.run_id }}
           export PROJECT_ID=demopostrecruitmentjoinin-fkyn
 
           ./k8s-migrations/web/dev/k8s_connect.sh
-          ./k8s-migrations/web/dev/mastermind-smart-suggestions/deploy_server.sh
+          ./k8s-migrations/web/dev/mastermind_smart_suggestions/deploy_server.sh

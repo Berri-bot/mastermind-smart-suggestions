@@ -3,7 +3,7 @@ name: Deploy to GKE
 on:
   push:
     branches:
-      - main 
+      - new-branch-name 
 
 jobs: 
   deploy:

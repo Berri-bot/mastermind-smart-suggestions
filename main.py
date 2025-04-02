@@ -36,6 +36,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.get('/')
+async def home():
+    return {'message': 'ok'}
+
 @app.on_event("startup")
 async def startup():
     logger.info("Starting application...")

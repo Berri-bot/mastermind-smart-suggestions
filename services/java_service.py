@@ -13,31 +13,37 @@ class JavaService:
         self.workspace = workspace
         self.src_dir = workspace / "src" / "main" / "java"
         self.initialized = False
+        
         self._setup_project_structure()
         self._initialize_lsp()
+        logger.info(f"JavaService initialized for workspace: {workspace}")
 
-    def _setup_project_structure(self):
+    def _setup_project_structure(self) -> None:
+        """Setup basic Java project structure"""
         self.src_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Create minimal pom.xml if not exists
         pom_path = self.workspace / "pom.xml"
         if not pom_path.exists():
             pom_content = """<?xml version="1.0" encoding="UTF-8"?>
-            <project xmlns="http://maven.apache.org/POM/4.0.0">
-                <modelVersion>4.0.0</modelVersion>
-                <groupId>com.example</groupId>
-                <artifactId>java-project</artifactId>
-                <version>1.0-SNAPSHOT</version>
-                <properties>
-                    <maven.compiler.source>21</maven.compiler.source>
-                    <maven.compiler.target>21</maven.compiler.target>
-                </properties>
-            </project>"""
+                                <project xmlns="http://maven.apache.org/POM/4.0.0">
+                                    <modelVersion>4.0.0</modelVersion>
+                                    <groupId>com.example</groupId>
+                                    <artifactId>java-project</artifactId>
+                                    <version>1.0-SNAPSHOT</version>
+                                    <properties>
+                                        <maven.compiler.source>21</maven.compiler.source>
+                                        <maven.compiler.target>21</maven.compiler.target>
+                                    </properties>
+                                </project>"""
             pom_path.write_text(pom_content)
             logger.info(f"Created pom.xml at {pom_path}")
 
-    def _initialize_lsp(self):
+    def _initialize_lsp(self) -> None:
+        """Initialize the Java LSP connection"""
         logger.info(f"Initializing Java LSP for workspace: {self.workspace}")
+        
         try:
-            # Simplified and validated initialize request
             response = LSPManager.send_java_request({
                 "method": "initialize",
                 "params": {
@@ -45,40 +51,79 @@ class JavaService:
                     "rootUri": f"file://{self.workspace}",
                     "capabilities": {
                         "textDocument": {
-                            "completion": {"completionItem": {"snippetSupport": True}}
+                            "completion": {
+                                "completionItem": {
+                                    "snippetSupport": True,
+                                    "deprecatedSupport": True,
+                                    "preselectSupport": True
+                                }
+                            }
+                        },
+                        "workspace": {
+                            "configuration": True
                         }
                     },
-                    "workspaceFolders": [{"uri": f"file://{self.workspace}", "name": "java_project"}]
+                    "workspaceFolders": [
+                        {"uri": f"file://{self.workspace}", "name": "java_project"}
+                    ]
                 }
             })
+            
             if response and "error" not in response:
                 self.initialized = True
-                LSPManager.send_java_notification({"method": "initialized", "params": {}})
+                LSPManager.send_java_notification({
+                    "method": "initialized",
+                    "params": {}
+                })
                 logger.info("Java LSP initialized successfully")
             else:
-                logger.error(f"Java LSP initialization failed: {response.get('error', 'Unknown error')}")
+                error = response.get("error", {"message": "Unknown error"}) if response else {"message": "No response"}
+                logger.error(f"Java LSP initialization failed: {error}")
+                raise RuntimeError(f"Java LSP initialization failed: {error['message']}")
+        
         except Exception as e:
-            logger.error(f"Error initializing Java LSP: {str(e)}", exc_info=True)
+            logger.error("Failed to initialize Java LSP", exc_info=True)
+            raise
 
     def get_completions(self, uri: str, text: str, line: int, column: int) -> List[Dict]:
+        """Get code completions for the given position"""
         if not self.initialized:
             logger.error("Java LSP not initialized")
             return []
+        
         file_path = self._ensure_proper_location(uri, text)
         self._send_did_open(file_path, text)
-        response = LSPManager.send_java_request({
-            "method": "textDocument/completion",
-            "params": {
-                "textDocument": {"uri": file_path},
-                "position": {"line": line, "character": column}
-            }
-        })
-        if not response or "error" in response:
-            logger.error(f"Completion request failed: {response.get('error', 'No response')}")
+        
+        try:
+            response = LSPManager.send_java_request({
+                "method": "textDocument/completion",
+                "params": {
+                    "textDocument": {"uri": file_path},
+                    "position": {"line": line, "character": column}
+                }
+            })
+            
+            if not response or "error" in response:
+                error = response.get("error", {"message": "No response"}) if response else {"message": "No response"}
+                logger.error(f"Completion request failed: {error}")
+                return []
+            
+            result = response.get("result", [])
+            items = result.get("items", result) if isinstance(result, dict) else result
+            
+            return [
+                {
+                    "label": item["label"],
+                    "insertText": item.get("insertText", item["label"]),
+                    "kind": item.get("kind", 0),
+                    "detail": item.get("detail", "")
+                }
+                for item in items
+            ]
+        
+        except Exception as e:
+            logger.error("Error getting completions", exc_info=True)
             return []
-        result = response.get("result", [])
-        items = result.get("items", result) if isinstance(result, dict) else result
-        return [{"label": item["label"], "insertText": item.get("insertText", item["label"])} for item in items]
 
     def _ensure_proper_location(self, uri: str, text: str) -> str:
         file_path = Path(uri.replace("file://", ""))

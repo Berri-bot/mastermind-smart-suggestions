@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mastermind-smart-suggestions
+  labels:
+    app: mastermind-smart-suggestions
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: mastermind-smart-suggestions
+  template:
+    metadata:
+      labels:
+        app: mastermind-smart-suggestions
+    spec:
+      containers:
+        - name: mastermind-smart-suggestions
+          image: gcr.io/demopostrecruitmentjoinin-fkyn/mastermind-smart-suggestions:${GITHUB_RUN_ID}
+          ports:
+            - containerPort: 8001
+          env:
+            - name: JAVA_HOME
+              value: "/app/lsp/java/jdk-21.0.2"
+            - name: JDT_HOME
+              value: "/app/lsp/java/jdt-language-server-1.36.0"
+            - name: LOG_LEVEL
+              value: "DEBUG"

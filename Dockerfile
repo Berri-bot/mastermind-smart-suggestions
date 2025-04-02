@@ -13,6 +13,12 @@ RUN pip install --no-cache-dir -r requirements.txt "uvicorn[standard]" "python-l
 RUN chmod +x /app/lsp/java/jdk-21.0.2/bin/java && \
     chmod +x /app/lsp/java/jdk-21.0.2/bin/javac
 
+# Set JAVA_HOME environment variable
+ENV JAVA_HOME=/app/lsp/java/jdk-21.0.2
+ENV JDT_HOME=/app/lsp/java/jdt-language-server-1.36.0
+ENV PATH="${JAVA_HOME}/bin:${PATH}"
+
+#Expose port
 EXPOSE 8001
 
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8001"]

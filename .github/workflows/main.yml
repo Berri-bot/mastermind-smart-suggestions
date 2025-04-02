@@ -41,8 +41,10 @@ jobs:
           echo "${{ secrets.ACTIONS_KEY }}" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan github.com >> ~/.ssh/known_hosts
+          ssh -T git@github.com || exit 1
 
-      - name: Clone k8s-migrations Repository
+
+      - name: Manually clone k8s-migrations repository
         run: |
           git clone --branch main git@github.com:berri-bot/k8s-migrations.git k8s-migrations
           cd k8s-migrations

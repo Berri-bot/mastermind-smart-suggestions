@@ -1,0 +1,26 @@
+2025-04-02 15:59:00,507 - document_manager - INFO - /app/services/document_manager.py:13 - DocumentManager initialized
+2025-04-02 15:59:00,512 - main - INFO - /app/main.py:28 - Starting application...
+2025-04-02 15:59:00,516 - config - ERROR - /app/config/__init__.py:26 - Java validation failed: [Errno 2] No such file or directory: '/app/lsp/java/jdk-21/bin/java'
+Traceback (most recent call last):
+  File "/app/config/__init__.py", line 21, in validate_java
+    result = subprocess.run([str(self.JDK_HOME / "bin" / "java"), "-version"], capture_output=True, text=True)
+  File "/usr/local/lib/python3.10/subprocess.py", line 503, in run
+    with Popen(*popenargs, **kwargs) as process:
+  File "/usr/local/lib/python3.10/subprocess.py", line 971, in __init__
+    self._execute_child(args, executable, preexec_fn, close_fds,
+  File "/usr/local/lib/python3.10/subprocess.py", line 1863, in _execute_child
+    raise child_exception_type(errno_num, err_msg, err_filename)
+FileNotFoundError: [Errno 2] No such file or directory: '/app/lsp/java/jdk-21/bin/java'
+2025-04-02 15:59:00,528 - main - ERROR - /app/main.py:33 - Application startup failed
+Traceback (most recent call last):
+  File "/app/main.py", line 30, in startup
+    config.validate_java()
+  File "/app/config/__init__.py", line 21, in validate_java
+    result = subprocess.run([str(self.JDK_HOME / "bin" / "java"), "-version"], capture_output=True, text=True)
+  File "/usr/local/lib/python3.10/subprocess.py", line 503, in run
+    with Popen(*popenargs, **kwargs) as process:
+  File "/usr/local/lib/python3.10/subprocess.py", line 971, in __init__
+    self._execute_child(args, executable, preexec_fn, close_fds,
+  File "/usr/local/lib/python3.10/subprocess.py", line 1863, in _execute_child
+    raise child_exception_type(errno_num, err_msg, err_filename)
+FileNotFoundError: [Errno 2] No such file or directory: '/app/lsp/java/jdk-21/bin/java'

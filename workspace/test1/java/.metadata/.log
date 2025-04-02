@@ -1,0 +1,166 @@
+!SESSION 2025-04-02 15:50:02.959 -----------------------------------------------
+eclipse.buildId=unknown
+java.version=21
+java.vendor=Oracle Corporation
+BootLoader constants: OS=linux, ARCH=x86_64, WS=gtk, NL=en
+Framework arguments:  --add-modules=ALL-SYSTEM --add-opens java.base/java.util=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED
+Command-line arguments:  -data /app/workspace/test1/java --add-modules=ALL-SYSTEM --add-opens java.base/java.util=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED
+
+!ENTRY org.eclipse.jdt.ls.core 1 0 2025-04-02 15:50:08.122
+!MESSAGE class org.eclipse.jdt.ls.core.internal.JavaLanguageServerPlugin is started
+
+!ENTRY org.eclipse.jdt.ls.core 1 0 2025-04-02 15:50:08.656
+!MESSAGE Main thread is waiting
+
+!ENTRY org.eclipse.jdt.ls.core 1 0 2025-04-02 15:50:08.693
+!MESSAGE >> initialize
+
+!ENTRY org.eclipse.jdt.ls.core 1 0 2025-04-02 15:50:08.707
+!MESSAGE Initializing Java Language Server 1.36.0.202405301306
+
+!ENTRY org.eclipse.jdt.ls.core 1 0 2025-04-02 15:50:08.718
+!MESSAGE Started org.eclipse.m2e.core 1ms
+
+!ENTRY org.eclipse.jdt.ls.core 1 0 2025-04-02 15:50:09.611
+!MESSAGE ProjectRegistryRefreshJob finished 880ms
+
+!ENTRY org.eclipse.jdt.ls.core 1 0 2025-04-02 15:50:09.668
+!MESSAGE Started org.eclipse.buildship.core 42ms
+
+!ENTRY org.eclipse.jdt.ls.core 1 0 2025-04-02 15:50:09.729
+!MESSAGE Static Commands: []
+
+!ENTRY org.eclipse.jdt.ls.core 1 0 2025-04-02 15:50:09.738
+!MESSAGE Non-Static Commands: [java.project.import, java.project.changeImportedProjects, java.navigate.openTypeHierarchy, java.project.resolveStackTraceLocation, java.edit.handlePasteEvent, java.edit.stringFormatting, java.project.getSettings, java.project.resolveWorkspaceSymbol, java.project.upgradeGradle, java.project.createModuleInfo, java.vm.getAllInstalls, java.edit.organizeImports, java.project.refreshDiagnostics, java.project.removeFromSourcePath, java.project.listSourcePaths, java.project.updateSettings, java.project.getAll, java.reloadBundles, java.project.isTestFile, java.project.resolveText, java.project.getClasspaths, java.navigate.resolveTypeHierarchy, java.edit.smartSemicolonDetection, java.project.updateSourceAttachment, java.project.updateClassPaths, java.decompile, java.protobuf.generateSources, java.project.resolveSourceAttachment, java.project.updateJdk, java.project.addToSourcePath, java.completion.onDidSelect]
+
+!ENTRY org.eclipse.jdt.ls.core 1 0 2025-04-02 15:50:09.778
+!MESSAGE RepositoryRegistryUpdateJob finished 1ms
+
+!ENTRY org.eclipse.jdt.ls.core 1 0 2025-04-02 15:50:09.799
+!MESSAGE >> initialized
+
+!ENTRY org.eclipse.jdt.ls.core 1 0 2025-04-02 15:50:09.909
+!MESSAGE Workspace initialized in 131ms
+
+!ENTRY org.eclipse.jdt.ls.core 1 0 2025-04-02 15:50:09.940
+!MESSAGE >> initialization job finished
+
+!ENTRY org.eclipse.jdt.ls.core 1 0 2025-04-02 15:50:09.973
+!MESSAGE >> build jobs finished
+
+!ENTRY org.eclipse.jdt.ls.core 1 0 2025-04-02 15:50:09.985
+!MESSAGE >> registerWatchers'
+
+!ENTRY org.eclipse.jdt.ls.core 1 0 2025-04-02 15:50:10.003
+!MESSAGE Try to create an invisible project for the workspace /app/workspace/test1/java
+
+!ENTRY org.eclipse.jdt.ls.core 1 0 2025-04-02 15:50:10.022
+!MESSAGE Creating the Java project java_79443069
+
+!ENTRY org.eclipse.jdt.ls.core 1 0 2025-04-02 15:50:10.821
+!MESSAGE Finished creating the Java project java_79443069
+
+!ENTRY org.eclipse.jdt.ls.core 4 0 2025-04-02 15:50:11.547
+!MESSAGE Failed to create the invisible project.
+!STACK 1
+org.eclipse.core.runtime.CoreException: Failed to create linked resource from '/app/workspace/test1/java' to the invisible project 'java_79443069'.
+	at org.eclipse.jdt.ls.core.internal.ProjectUtils.createInvisibleProjectIfNotExist(ProjectUtils.java:374)
+	at org.eclipse.jdt.ls.core.internal.managers.InvisibleProjectImporter.loadInvisibleProject(InvisibleProjectImporter.java:144)
+	at org.eclipse.jdt.ls.core.internal.handlers.DocumentLifeCycleHandler.resolveCompilationUnit(DocumentLifeCycleHandler.java:65)
+	at org.eclipse.jdt.ls.core.internal.handlers.BaseDocumentLifeCycleHandler.handleOpen(BaseDocumentLifeCycleHandler.java:402)
+	at org.eclipse.jdt.ls.core.internal.handlers.BaseDocumentLifeCycleHandler.lambda$0(BaseDocumentLifeCycleHandler.java:351)
+	at org.eclipse.core.internal.resources.Workspace.run(Workspace.java:2451)
+	at org.eclipse.core.internal.resources.Workspace.run(Workspace.java:2476)
+	at org.eclipse.jdt.ls.core.internal.handlers.BaseDocumentLifeCycleHandler.didOpen(BaseDocumentLifeCycleHandler.java:351)
+	at org.eclipse.jdt.ls.core.internal.handlers.JDTLanguageServer.didOpen(JDTLanguageServer.java:873)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at org.eclipse.lsp4j.jsonrpc.services.GenericEndpoint.lambda$recursiveFindRpcMethods$0(GenericEndpoint.java:65)
+	at org.eclipse.lsp4j.jsonrpc.services.GenericEndpoint.notify(GenericEndpoint.java:152)
+	at org.eclipse.lsp4j.jsonrpc.RemoteEndpoint.handleNotification(RemoteEndpoint.java:231)
+	at org.eclipse.lsp4j.jsonrpc.RemoteEndpoint.consume(RemoteEndpoint.java:198)
+	at org.eclipse.jdt.ls.core.internal.ParentProcessWatcher.lambda$1(ParentProcessWatcher.java:144)
+	at org.eclipse.lsp4j.jsonrpc.json.StreamMessageProducer.handleMessage(StreamMessageProducer.java:194)
+	at org.eclipse.lsp4j.jsonrpc.json.StreamMessageProducer.listen(StreamMessageProducer.java:94)
+	at org.eclipse.lsp4j.jsonrpc.json.ConcurrentMessageProcessor.run(ConcurrentMessageProcessor.java:113)
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:572)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+Caused by: org.eclipse.core.internal.resources.ResourceException: '/app/workspace/test1/java' is not a valid location for linked resources.
+	at org.eclipse.core.internal.resources.Resource.assertLinkRequirements(Resource.java:204)
+	at org.eclipse.core.internal.resources.Resource.createLink(Resource.java:671)
+	at org.eclipse.jdt.ls.core.internal.ProjectUtils.createInvisibleProjectIfNotExist(ProjectUtils.java:358)
+	... 23 more
+!SUBENTRY 1 org.eclipse.jdt.ls.core 4 0 2025-04-02 15:50:11.549
+!MESSAGE Failed to create linked resource from '/app/workspace/test1/java' to the invisible project 'java_79443069'.
+!STACK 1
+org.eclipse.core.internal.resources.ResourceException: '/app/workspace/test1/java' is not a valid location for linked resources.
+	at org.eclipse.core.internal.resources.Resource.assertLinkRequirements(Resource.java:204)
+	at org.eclipse.core.internal.resources.Resource.createLink(Resource.java:671)
+	at org.eclipse.jdt.ls.core.internal.ProjectUtils.createInvisibleProjectIfNotExist(ProjectUtils.java:358)
+	at org.eclipse.jdt.ls.core.internal.managers.InvisibleProjectImporter.loadInvisibleProject(InvisibleProjectImporter.java:144)
+	at org.eclipse.jdt.ls.core.internal.handlers.DocumentLifeCycleHandler.resolveCompilationUnit(DocumentLifeCycleHandler.java:65)
+	at org.eclipse.jdt.ls.core.internal.handlers.BaseDocumentLifeCycleHandler.handleOpen(BaseDocumentLifeCycleHandler.java:402)
+	at org.eclipse.jdt.ls.core.internal.handlers.BaseDocumentLifeCycleHandler.lambda$0(BaseDocumentLifeCycleHandler.java:351)
+	at org.eclipse.core.internal.resources.Workspace.run(Workspace.java:2451)
+	at org.eclipse.core.internal.resources.Workspace.run(Workspace.java:2476)
+	at org.eclipse.jdt.ls.core.internal.handlers.BaseDocumentLifeCycleHandler.didOpen(BaseDocumentLifeCycleHandler.java:351)
+	at org.eclipse.jdt.ls.core.internal.handlers.JDTLanguageServer.didOpen(JDTLanguageServer.java:873)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at org.eclipse.lsp4j.jsonrpc.services.GenericEndpoint.lambda$recursiveFindRpcMethods$0(GenericEndpoint.java:65)
+	at org.eclipse.lsp4j.jsonrpc.services.GenericEndpoint.notify(GenericEndpoint.java:152)
+	at org.eclipse.lsp4j.jsonrpc.RemoteEndpoint.handleNotification(RemoteEndpoint.java:231)
+	at org.eclipse.lsp4j.jsonrpc.RemoteEndpoint.consume(RemoteEndpoint.java:198)
+	at org.eclipse.jdt.ls.core.internal.ParentProcessWatcher.lambda$1(ParentProcessWatcher.java:144)
+	at org.eclipse.lsp4j.jsonrpc.json.StreamMessageProducer.handleMessage(StreamMessageProducer.java:194)
+	at org.eclipse.lsp4j.jsonrpc.json.StreamMessageProducer.listen(StreamMessageProducer.java:94)
+	at org.eclipse.lsp4j.jsonrpc.json.ConcurrentMessageProcessor.run(ConcurrentMessageProcessor.java:113)
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:572)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+!SUBENTRY 2 org.eclipse.core.resources 4 77 2025-04-02 15:50:11.549
+!MESSAGE '/app/workspace/test1/java' is not a valid location for linked resources.
+
+!ENTRY org.eclipse.jdt.ls.core 1 0 2025-04-02 15:50:11.558
+!MESSAGE Creating the Java project jdt.ls-java-project
+
+!ENTRY org.eclipse.jdt.ls.core 1 0 2025-04-02 15:50:12.003
+!MESSAGE Finished creating the Java project jdt.ls-java-project
+
+!ENTRY org.eclipse.jdt.ls.core 1 0 2025-04-02 15:50:13.160
+!MESSAGE Reconciled 1. Took 0 ms
+
+!ENTRY org.eclipse.jdt.ls.core 1 0 2025-04-02 15:50:13.303
+!MESSAGE Completion request completed
+
+!ENTRY org.eclipse.jdt.ls.core 1 0 2025-04-02 15:50:13.830
+!MESSAGE begin problem for /Test.java
+
+!ENTRY org.eclipse.jdt.ls.core 1 0 2025-04-02 15:50:13.845
+!MESSAGE 1 problems reported for /Test.java
+
+!ENTRY org.eclipse.jdt.ls.core 1 0 2025-04-02 15:50:13.862
+!MESSAGE Validated 1. Took 90 ms
+
+!ENTRY org.eclipse.jdt.ls.core 1 0 2025-04-02 15:50:24.299
+!MESSAGE Completion request completed
+
+!ENTRY org.eclipse.jdt.ls.core 1 0 2025-04-02 15:50:24.364
+!MESSAGE Reconciled 1. Took 0 ms
+
+!ENTRY org.eclipse.jdt.ls.core 1 0 2025-04-02 15:50:24.837
+!MESSAGE begin problem for /Test.java
+
+!ENTRY org.eclipse.jdt.ls.core 1 0 2025-04-02 15:50:24.845
+!MESSAGE 1 problems reported for /Test.java
+
+!ENTRY org.eclipse.jdt.ls.core 1 0 2025-04-02 15:50:24.853
+!MESSAGE Validated 1. Took 31 ms
+
+!ENTRY org.eclipse.jdt.ls.core 1 0 2025-04-02 15:55:03.406
+!MESSAGE >> exit

@@ -1,71 +1,64 @@
-import os
-import subprocess
 from pathlib import Path
-from typing import List
-from logger import get_logger, setup_logging
+import subprocess
+from logger import get_logger
 
-setup_logging()
 logger = get_logger("config")
 
 class Config:
     def __init__(self):
-        self.BASE_DIR = Path(os.path.dirname(os.path.abspath(__file__))).parent
-        self.LOG_FILE = self.BASE_DIR / "logs" / "server.log"
-        self.JDK_HOME = Path(os.getenv("JAVA_HOME", "/app/lsp/java/jdk-21"))
-        self.JDT_HOME = Path(os.getenv("JDT_HOME", "/app/lsp/java/jdt-language-server-1.36.0"))
-        self.WORKSPACE_DIR = Path(os.getenv("WORKSPACE", "/app/workspace"))
-        self.PYTHON_LSP_CMD = ["pylsp"]
+        # Base application directory
+        self.APP_DIR = Path("/app")
         
-        # JDTLS specific paths
+        # JDK configuration
+        self.JDK_HOME = self.APP_DIR / "lsp" / "java"
+        self.JAVA_BIN = self.JDK_HOME / "bin" / "java"
+        
+        # JDTLS configuration
+        self.JDT_HOME = self.APP_DIR / "lsp" / "java" / "jdt-language-server-1.36.0"
         self.JDT_CONFIG = self.JDT_HOME / "config_linux"
-        self.JDT_PLUGINS = self.JDT_HOME / "plugins"
-        self.JDT_LAUNCHER = self._find_launcher_jar()
+        self.JDT_LAUNCHER = self.JDT_HOME / "plugins" / "org.eclipse.equinox.launcher_1.6.800.v20240513-1750.jar"
         
-        # Validate paths
-        self._validate_paths()
+        # Workspace directory
+        self.WORKSPACE_DIR = self.APP_DIR / "workspace"
+        self.WORKSPACE_DIR.mkdir(parents=True, exist_ok=True)
         
-        logger.info(f"Configuration initialized:\n"
-                   f"  JDK_HOME: {self.JDK_HOME}\n"
-                   f"  JDT_HOME: {self.JDT_HOME}\n"
-                   f"  WORKSPACE: {self.WORKSPACE_DIR}\n"
-                   f"  JDT Launcher: {self.JDT_LAUNCHER}")
-
-    def _find_launcher_jar(self) -> Path:
-        launcher_jars = list(self.JDT_PLUGINS.glob("org.eclipse.equinox.launcher_*.jar"))
-        if not launcher_jars:
-            raise FileNotFoundError(f"No JDT launcher JAR found in {self.JDT_PLUGINS}")
-        return launcher_jars[0]
-
-    def _validate_paths(self):
-        """Validate all required paths exist and are accessible"""
-        required_paths = [
-            (self.JDK_HOME / "bin" / "java", "Java executable"),
-            (self.JDT_HOME, "JDT Language Server"),
-            (self.JDT_CONFIG, "JDT config directory"),
-            (self.JDT_LAUNCHER, "JDT launcher JAR")
-        ]
+        # Log file
+        self.LOG_FILE = self.APP_DIR / "app.log"
         
-        for path, description in required_paths:
-            if not path.exists():
-                raise FileNotFoundError(f"{description} not found at {path}")
-            if not os.access(path, os.R_OK):
-                raise PermissionError(f"No read access to {path}")
+        # Log configuration details
+        logger.info(
+            f"Configuration initialized:\n"
+            f"  JDK_HOME: {self.JDK_HOME}\n"
+            f"  JAVA_BIN: {self.JAVA_BIN}\n"
+            f"  JDT_HOME: {self.JDT_HOME}\n"
+            f"  JDT_CONFIG: {self.JDT_CONFIG}\n"
+            f"  JDT_LAUNCHER: {self.JDT_LAUNCHER}\n"
+            f"  WORKSPACE_DIR: {self.WORKSPACE_DIR}"
+        )
+        
+        # Validate configuration on initialization
+        self.validate_java()
 
-    def validate_java(self) -> str:
-        """Validate Java installation and return version"""
-        java_exec = self.JDK_HOME / "bin" / "java"
+    def validate_java(self):
+        """Validate that Java is correctly installed and executable"""
         try:
             result = subprocess.run(
-                [str(java_exec), "-version"],
-                check=True,
+                [str(self.JAVA_BIN), "-version"],
                 capture_output=True,
-                text=True
+                text=True,
+                check=True
             )
-            version = result.stderr.split('\n')[0].strip()
-            logger.info(f"Java version: {version}")
-            return version
+            java_version = result.stderr.strip()  # -version outputs to stderr
+            logger.info(f"Java version: {java_version}")
         except subprocess.CalledProcessError as e:
-            logger.error(f"Java version check failed: {e.stderr}")
-            raise RuntimeError(f"Java version check failed: {e.stderr}")
+            logger.error(f"Java validation failed with exit code {e.returncode}: {e.stderr}", exc_info=True)
+            raise RuntimeError(f"Java validation failed: {e.stderr}")
+        except FileNotFoundError:
+            logger.error(f"Java binary not found at {self.JAVA_BIN}", exc_info=True)
+            raise RuntimeError(f"Java binary not found at {self.JAVA_BIN}")
+        except Exception as e:
+            logger.error(f"Unexpected error during Java validation: {e}", exc_info=True)
+            raise
 
+# Singleton instance of Config
 config = Config()

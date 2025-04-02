@@ -1,12 +1,9 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 from services.document_manager import DocumentManager
-from services.lsp_manager import LSPManager
 from config import config
 from logger import get_logger, setup_logging
 import json
-import os
 from typing import Dict, Any
 
 # Setup logging
@@ -30,12 +27,7 @@ async def startup():
     """Initialize application services"""
     logger.info("Starting application...")
     try:
-        # Validate configuration
         config.validate_java()
-        
-        # Initialize LSP servers
-        LSPManager.initialize_servers()
-        
         logger.info("Application startup completed successfully")
     except Exception as e:
         logger.error("Application startup failed", exc_info=True)
@@ -46,7 +38,6 @@ async def shutdown():
     """Cleanup application resources"""
     logger.info("Shutting down application...")
     try:
-        LSPManager.shutdown()
         manager.shutdown()
         logger.info("Application shutdown completed")
     except Exception as e:
@@ -62,10 +53,8 @@ async def process_message(websocket: WebSocket, message: Dict[str, Any], intervi
     logger.info(f"[interview={interview_id}] Processing message: {json.dumps(message)}")
     
     try:
-        # Validate JSON-RPC message
         if message.get("jsonrpc") != "2.0":
             raise ValueError("Invalid JSON-RPC version")
-        
         if "method" not in message:
             raise ValueError("Missing 'method' in message")
         
@@ -75,7 +64,6 @@ async def process_message(websocket: WebSocket, message: Dict[str, Any], intervi
         
         response = {"jsonrpc": "2.0", "id": message_id}
         
-        # Process different methods
         if method == "textDocument/didOpen":
             doc = params["textDocument"]
             manager.did_open(
@@ -89,7 +77,6 @@ async def process_message(websocket: WebSocket, message: Dict[str, Any], intervi
         elif method == "textDocument/didChange":
             doc = params["textDocument"]
             changes = params.get("contentChanges", [])
-            
             if changes:
                 manager.did_change(
                     interview_id,
@@ -103,7 +90,6 @@ async def process_message(websocket: WebSocket, message: Dict[str, Any], intervi
         elif method == "textDocument/completion":
             doc = params["textDocument"]
             position = params["position"]
-            
             completions = manager.get_completions(
                 interview_id,
                 doc["uri"],
@@ -145,7 +131,6 @@ async def websocket_endpoint(websocket: WebSocket, interview_id: str):
         while True:
             data = await websocket.receive_text()
             logger.debug(f"[interview={interview_id}] Received message: {data[:200]}...")
-            
             try:
                 message = json.loads(data)
                 await process_message(websocket, message, interview_id)

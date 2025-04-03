@@ -6,7 +6,9 @@ FROM python:3.10-slim
 #     maven \
 #     && rm -rf /var/lib/apt/lists/*
 
-RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+# RUN apt-get update && apt-get install -y curl 
+
+RUN apt-get update && apt-get install -y wget && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -14,19 +16,22 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Install JDK 21
-RUN curl -L -o jdk.tar.gz "https://download.oracle.com/java/21/archive/jdk-21_linux-x64_bin.tar.gz" \
-    && mkdir -p /app/lsp/java//jdk-21.0.2 \
-    && tar -xzf jdk.tar.gz -C /app/lsp/java/jdk-21.0.2 --strip-components=1 \
-    && rm jdk.tar.gz \
-    && chmod -R 755 /app/lsp/java/jdk-21.0.2
+# Install wget and other dependencies
 
-# Install JDT Language Server
-RUN curl -L -o jdtls.tar.gz "https://download.eclipse.org/jdtls/milestones/1.36.0/jdt-language-server-1.36.0-202405301306.tar.gz" \
-    && mkdir -p /app/lsp/java/jdt-language-server-1.36.0 \
-    && tar -xzf jdtls.tar.gz -C /app/lsp/java/jdt-language-server-1.36.0 \
-    && rm jdtls.tar.gz \
-    && chmod -R 755 /app/lsp/java/jdt-language-server-1.36.0
+RUN wget --no-check-certificate -O jdk-21.tar.gz "https://download.oracle.com/java/21/archive/jdk-21_linux-x64_bin.tar.gz" && \
+    tar -xzf jdk-21.tar.gz && \
+    rm jdk-21.tar.gz && \
+    mv jdk-21 /app/lsp/java/jdk-21.0.2 && \
+    # Ensure /usr/bin/java and /usr/bin/javac point to the correct location
+    ln -sf /app/lsp/java/jdk-21.0.2/bin/java /usr/bin/java && \
+    ln -sf /app/lsp/java/jdk-21.0.2/bin/javac /usr/bin/javac
+
+# Download the JDT Language Server 1.36
+RUN wget --content-disposition -O jdtls.tar.gz "https://www.eclipse.org/downloads/download.php?file=/jdtls/milestones/1.36.0/jdt-language-server-1.36.0-202405301306.tar.gz" && \
+    mkdir -p /app/lsp/java/jdt-language-server-1.36.0 && \
+    tar -xzf jdtls.tar.gz -C /app/lsp/java/jdt-language-server-1.36.0 && \
+    rm jdtls.tar.gz && \
+    chmod -R 755 /app/lsp/java/jdt-language-server-1.36.0
 
 # Set JAVA_HOME environment variable
 ENV JAVA_HOME=/app/lsp/java/jdk-21.0.2

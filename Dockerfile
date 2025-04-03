@@ -21,10 +21,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 RUN wget --no-check-certificate -O jdk-21.tar.gz "https://download.oracle.com/java/21/archive/jdk-21_linux-x64_bin.tar.gz" && \
     tar -xzf jdk-21.tar.gz && \
     rm jdk-21.tar.gz && \
+    mkdir -p /app/lsp/java/jdk-21.0.2 && \   # ✅ Ensure directory exists
     mv jdk-21 /app/lsp/java/jdk-21.0.2 && \
-    # Ensure /usr/bin/java and /usr/bin/javac point to the correct location
     ln -sf /app/lsp/java/jdk-21.0.2/bin/java /usr/bin/java && \
     ln -sf /app/lsp/java/jdk-21.0.2/bin/javac /usr/bin/javac
+
 
 # Download the JDT Language Server 1.36
 RUN wget --content-disposition -O jdtls.tar.gz "https://www.eclipse.org/downloads/download.php?file=/jdtls/milestones/1.36.0/jdt-language-server-1.36.0-202405301306.tar.gz" && \

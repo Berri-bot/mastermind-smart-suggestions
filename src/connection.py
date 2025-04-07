@@ -2,10 +2,10 @@ import json
 import logging
 import os
 import shutil
-import subprocess
 from typing import Optional
 from fastapi import WebSocket
 from utils.subprocess_utils import SubprocessManager
+import traceback
 
 logger = logging.getLogger(__name__)
 
@@ -25,111 +25,82 @@ class ConnectionHandler:
         self.launcher_jar = launcher_jar
         self.config_path = config_path
         self.base_workspace_dir = base_workspace_dir
-        self.workspace_path = os.path.join(self.base_workspace_dir, f"{self.interview_id}_{os.urandom(4).hex()}")
+        self.workspace_path = os.path.join(self.base_workspace_dir, f"{self.interview_id}")
         self.subprocess: Optional[SubprocessManager] = None
         self.initialized = False
         self.next_id = 1
         self.open_documents = set()
-        logger.info(f"Initializing ConnectionHandler with workspace_path: {self.workspace_path}")
 
     async def initialize(self):
-        try:
-            logger.info(f"Creating workspace at: {self.workspace_path}")
-            if os.path.exists(self.workspace_path):
-                logger.warning(f"Cleaning existing workspace at: {self.workspace_path}")
-                shutil.rmtree(self.workspace_path, ignore_errors=True)
-            os.makedirs(self.workspace_path, exist_ok=True)
-            self._create_project_files()
+        if os.path.exists(self.workspace_path):
+            shutil.rmtree(self.workspace_path, ignore_errors=True)
+        os.makedirs(self.workspace_path, exist_ok=True)
+        self._create_project_files()
 
-            # Verify Java installation
-            try:
-                java_version = subprocess.check_output(['java', '-version'], stderr=subprocess.STDOUT)
-                logger.info(f"Java version: {java_version.decode('utf-8', 'replace')}")
-            except Exception as e:
-                logger.error("Java not found or not accessible", exc_info=True)
-                raise RuntimeError("Java runtime not available") from e
+        cmd = [
+            "java",
+            "-Declipse.application=org.eclipse.jdt.ls.core.id1",
+            "-Dosgi.bundles.defaultStartLevel=4",
+            "-Declipse.product=org.eclipse.jdt.ls.core.product",
+            "-Dlog.level=ALL",
+            "-Xms1G",
+            "-Xmx2G",
+            "-jar", self.launcher_jar,
+            "-configuration", self.config_path,
+            "-data", self.workspace_path,
+            "--add-modules=ALL-SYSTEM",
+            "--add-opens", "java.base/java.util=ALL-UNNAMED",
+            "--add-opens", "java.base/java.lang=ALL-UNNAMED"
+        ]
 
-            cmd = [
-                "java",
-                "-Declipse.application=org.eclipse.jdt.ls.core.id1",
-                "-Dosgi.bundles.defaultStartLevel=4",
-                "-Declipse.product=org.eclipse.jdt.ls.core.product",
-                "-Dlog.level=ALL",
-                "-Xms1G",
-                "-Xmx2G",
-                "-jar", self.launcher_jar,
-                "-configuration", self.config_path,
-                "-data", self.workspace_path,
-                "--add-modules=ALL-SYSTEM",
-                "--add-opens", "java.base/java.util=ALL-UNNAMED",
-                "--add-opens", "java.base/java.lang=ALL-UNNAMED"
-            ]
+        self.subprocess = SubprocessManager(cmd)
+        self.subprocess.set_notification_callback(self._handle_notification)
+        await self.subprocess.start()
+        logger.info(f"JDT LS process started for {self.interview_id} with workspace {self.workspace_path}")
 
-            logger.info(f"Starting JDTLS with command: {' '.join(cmd)}")
-            self.subprocess = SubprocessManager(cmd)
-            self.subprocess.set_notification_callback(self._handle_notification)
-            await self.subprocess.start()
-            logger.info(f"JDT LS process started for {self.interview_id}")
-
-            init_msg = {
-                "jsonrpc": "2.0",
-                "id": self.next_id,
-                "method": "initialize",
-                "params": {
-                    "processId": None,
-                    "rootUri": f"file://{self.workspace_path}",
-                    "capabilities": {
-                        "textDocument": {
-                            "synchronization": {"openClose": True, "change": 2, "save": {"includeText": True}},
-                            "completion": {"completionItem": {"snippetSupport": True}},
-                            "publishDiagnostics": {"relatedInformation": True}
-                        },
-                        "workspace": {"didChangeConfiguration": {"dynamicRegistration": True}, "workspaceFolders": True}
+        init_msg = {
+            "jsonrpc": "2.0",
+            "id": self.next_id,
+            "method": "initialize",
+            "params": {
+                "processId": None,
+                "rootUri": f"file://{self.workspace_path}",
+                "capabilities": {
+                    "textDocument": {
+                        "synchronization": {"openClose": True, "change": 2, "save": {"includeText": True}},
+                        "completion": {"completionItem": {"snippetSupport": True}},
+                        "publishDiagnostics": {"relatedInformation": True}
                     },
-                    "workspaceFolders": [{"uri": f"file://{self.workspace_path}", "name": self.interview_id}]
+                    "workspace": {"didChangeConfiguration": {"dynamicRegistration": True}, "workspaceFolders": True}
+                },
+                "workspaceFolders": [{"uri": f"file://{self.workspace_path}", "name": self.interview_id}]
+            }
+        }
+        self.next_id += 1
+        await self.subprocess.send(json.dumps(init_msg))
+        response = await self.subprocess.receive(init_msg["id"], timeout=30.0)
+        if response:
+            self.initialized = True
+            logger.info(f"JDT LS initialized successfully for {self.interview_id}")
+            await self.websocket.send_text(response)
+            await self.subprocess.send(json.dumps({"jsonrpc": "2.0", "method": "initialized", "params": {}}))
+            did_open_msg = {
+                "jsonrpc": "2.0",
+                "method": "textDocument/didOpen",
+                "params": {
+                    "textDocument": {
+                        "uri": f"file://{self.workspace_path}/src/Main.java",
+                        "languageId": "java",
+                        "version": 1,
+                        "text": open(f"{self.workspace_path}/src/Main.java", "r").read()
+                    }
                 }
             }
-            self.next_id += 1
-            
-            logger.info(f"Sending initialize message ID {init_msg['id']}")
-            await self.subprocess.send(json.dumps(init_msg))
-            
-            response = await self.subprocess.receive(init_msg["id"], timeout=30.0)
-            if response:
-                self.initialized = True
-                logger.info(f"JDT LS initialized successfully for {self.interview_id}")
-                await self.websocket.send_text(response)
-                await self.subprocess.send(json.dumps({"jsonrpc": "2.0", "method": "initialized", "params": {}}))
-                
-                # Open the initial file
-                java_file_path = os.path.join(self.workspace_path, "src", "Main.java")
-                if os.path.exists(java_file_path):
-                    with open(java_file_path, "r") as f:
-                        content = f.read()
-                    did_open_msg = {
-                        "jsonrpc": "2.0",
-                        "method": "textDocument/didOpen",
-                        "params": {
-                            "textDocument": {
-                                "uri": f"file://{java_file_path}",
-                                "languageId": "java",
-                                "version": 1,
-                                "text": content
-                            }
-                        }
-                    }
-                    await self.subprocess.send(json.dumps(did_open_msg))
-                    logger.info(f"Sent didOpen for {java_file_path}")
-                else:
-                    logger.error(f"Java file not found at {java_file_path}")
-            else:
-                logger.error(f"Failed to initialize JDT LS for {self.interview_id}: No response")
-                raise RuntimeError("JDT LS initialization failed")
-
-        except Exception as e:
-            logger.error(f"Initialization failed: {str(e)}", exc_info=True)
-            await self.websocket.close(code=1011)
-            raise
+            await self.subprocess.send(json.dumps(did_open_msg))
+        else:
+            logger.error(traceback.print_exc())
+            logger.error(f"Failed to initialize JDT LS for {self.interview_id}: No response")
+            raise RuntimeError("JDT LS initialization failed")
 
     def _create_project_files(self):
         src_path = os.path.join(self.workspace_path, "src")

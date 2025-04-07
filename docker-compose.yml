@@ -11,4 +11,3 @@ services:
     restart: unless-stopped
     stdin_open: true
     tty: true
-    

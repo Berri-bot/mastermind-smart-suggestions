@@ -3,15 +3,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from connection import ConnectionHandler
 import asyncio
 import logging
-import signal
 import os
 import glob
+from logger import setup_logging
 
-logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[logging.StreamHandler()]
-)
+# Setup logging with GCP-compatible format
+setup_logging()
 logger = logging.getLogger(__name__)
 
 app = FastAPI()
@@ -69,10 +66,3 @@ async def websocket_endpoint(websocket: WebSocket, interviewId: str, language: s
         logger.info(f"Starting cleanup for {interviewId}")
         await handler.cleanup()
         logger.info(f"Cleanup complete for {interviewId}")
-
-def handle_signal(signum, frame):
-    logger.info(f"Received signal {signum}, shutting down")
-    asyncio.get_event_loop().stop()
-
-signal.signal(signal.SIGTERM, handle_signal)
-signal.signal(signal.SIGINT, handle_signal)

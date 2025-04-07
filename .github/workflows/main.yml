@@ -31,7 +31,6 @@ jobs:
           export PROJECT_ID=demopostrecruitmentjoinin-fkyn
           export IMAGE_TAG=${{ github.run_id }}
           export IMAGE=gcr.io/$PROJECT_ID/mastermind-suggestion:$IMAGE_TAG
-
           docker build -t $IMAGE .
           docker push $IMAGE
 
@@ -41,7 +40,6 @@ jobs:
           echo "${{ secrets.ACTIONS_KEY }}" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan github.com >> ~/.ssh/known_hosts
-
 
       - name: Manually clone k8s-migrations repository
         run: |
@@ -53,6 +51,5 @@ jobs:
         run: |
           export TAG_IMAGE_WORKER=${{ github.run_id }}
           export PROJECT_ID=demopostrecruitmentjoinin-fkyn
-
           ./k8s-migrations/web/dev/k8s_connect.sh
           ./k8s-migrations/web/dev/mastermind_smart_suggestions/deploy_server.sh

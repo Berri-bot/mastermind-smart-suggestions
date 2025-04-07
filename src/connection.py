@@ -24,13 +24,15 @@ class ConnectionHandler:
         self.launcher_jar = launcher_jar
         self.config_path = config_path
         self.base_workspace_dir = base_workspace_dir
-        self.workspace_path = os.path.join(self.base_workspace_dir, self.interview_id)
+        self.workspace_path = os.path.join(self.base_workspace_dir, f"{self.interview_id}_{os.urandom(4).hex()}")
         self.subprocess: Optional[SubprocessManager] = None
         self.initialized = False
         self.next_id = 1
         self.open_documents = set()
 
     async def initialize(self):
+        if os.path.exists(self.workspace_path):
+            shutil.rmtree(self.workspace_path, ignore_errors=True)
         os.makedirs(self.workspace_path, exist_ok=True)
         self._create_project_files()
 
@@ -64,22 +66,13 @@ class ConnectionHandler:
                 "rootUri": f"file://{self.workspace_path}",
                 "capabilities": {
                     "textDocument": {
-                        "synchronization": {
-                            "openClose": True,
-                            "change": 2,
-                            "save": {"includeText": True}
-                        },
+                        "synchronization": {"openClose": True, "change": 2, "save": {"includeText": True}},
                         "completion": {"completionItem": {"snippetSupport": True}},
                         "publishDiagnostics": {"relatedInformation": True}
                     },
-                    "workspace": {
-                        "didChangeConfiguration": {"dynamicRegistration": True},
-                        "workspaceFolders": True
-                    }
+                    "workspace": {"didChangeConfiguration": {"dynamicRegistration": True}, "workspaceFolders": True}
                 },
-                "workspaceFolders": [
-                    {"uri": f"file://{self.workspace_path}", "name": self.interview_id}
-                ]
+                "workspaceFolders": [{"uri": f"file://{self.workspace_path}", "name": self.interview_id}]
             }
         }
         self.next_id += 1
@@ -90,7 +83,6 @@ class ConnectionHandler:
             logger.info(f"JDT LS initialized successfully for {self.interview_id}")
             await self.websocket.send_text(response)
             await self.subprocess.send(json.dumps({"jsonrpc": "2.0", "method": "initialized", "params": {}}))
-
             did_open_msg = {
                 "jsonrpc": "2.0",
                 "method": "textDocument/didOpen",
@@ -187,11 +179,30 @@ class ConnectionHandler:
                 version = message["params"]["textDocument"].get("version")
                 changes = message["params"]["contentChanges"]
                 logger.info(f"Applying changes to {uri} (version {version}): {json.dumps(changes)[:200]}...")
-                if changes and "text" in changes[0]:
-                    file_path = uri.replace("file://", "")
-                    with open(file_path, "w") as f:
-                        f.write(changes[0]["text"])
-                    logger.debug(f"Updated file content at {file_path}")
+                file_path = uri.replace("file://", "")
+                if changes:
+                    with open(file_path, "r+") as f:
+                        content = f.read()
+                        for change in changes:
+                            if "range" in change:
+                                start = change["range"]["start"]
+                                end = change["range"]["end"]
+                                lines = content.splitlines()
+                                line = lines[start["line"]]
+                                new_line = line[:start["character"]] + change["text"] + line[end["character"]:]
+                                lines[start["line"]] = new_line
+                                content = "\n".join(lines)
+                            else:
+                                content = change["text"]
+                        f.seek(0)
+                        f.write(content)
+                        f.truncate()
+                    logger.debug(f"Updated file content at {file_path}: {content[:200]}...")
+                await self.subprocess.send(json.dumps({
+                    "jsonrpc": "2.0",
+                    "method": "workspace/didChangeWatchedFiles",
+                    "params": {"changes": [{"uri": uri, "type": 2}]}
+                }))
 
             elif method == "textDocument/didClose":
                 uri = message["params"]["textDocument"]["uri"]
@@ -201,23 +212,23 @@ class ConnectionHandler:
                     await self.cleanup()
 
             elif method == "textDocument/completion":
-                logger.info(f"Completion request received at position: {message['params']['position']} for {message['params']['textDocument']['uri']}")
+                logger.info(f"Completion request for {message['params']['textDocument']['uri']} at {message['params']['position']}")
 
             elif method == "exit":
                 logger.info(f"Exit requested for {self.interview_id}")
                 await self.cleanup()
                 return
 
-            logger.debug(f"Forwarding message to JDT LS: {message_str[:200]}...")
+            logger.debug(f"Forwarding to JDT LS: {message_str[:200]}...")
             await self.subprocess.send(message_str)
             if msg_id is not None:
                 logger.debug(f"Awaiting response for ID {msg_id}")
                 response = await self.subprocess.receive(msg_id, timeout=15.0)
                 if response:
-                    logger.debug(f"Sending response for ID {msg_id} to client: {response[:200]}...")
+                    logger.info(f"Received and sending response for ID {msg_id}: {response[:200]}...")
                     await self.websocket.send_text(response)
                 else:
-                    logger.warning(f"No response received for ID {msg_id} within 15s timeout")
+                    logger.warning(f"No response received for ID {msg_id} within 15s")
                     await self.send_error(msg_id, -32603, "No response from JDT LS")
 
         except json.JSONDecodeError as e:
@@ -228,11 +239,7 @@ class ConnectionHandler:
             await self.send_error(msg_id, -32603, f"Internal error: {str(e)}")
 
     async def send_error(self, msg_id, code: int, message: str):
-        error = {
-            "jsonrpc": "2.0",
-            "id": msg_id,
-            "error": {"code": code, "message": message}
-        }
+        error = {"jsonrpc": "2.0", "id": msg_id, "error": {"code": code, "message": message}}
         logger.error(f"Sending error: {message}")
         await self.websocket.send_text(json.dumps(error))
 

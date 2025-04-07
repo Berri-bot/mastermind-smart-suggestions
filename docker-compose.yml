@@ -1,17 +1,14 @@
 version: '3.8'
-
 services:
-  code_completion:
+  lsp-server:
     build: .
     ports:
-      - "8001:8001"
+      - "8000:8000"
     volumes:
-      - ./workspace:/app/workspace
-      - ./logs:/app/logs
+      - ./workspaces:/workspaces
     environment:
-      - JAVA_HOME=/app/lsp/java/jdk-21.0.2
-      - JDT_HOME=/app/lsp/java/jdt-language-server-1.36.0
-      - LOG_LEVEL=DEBUG
+      - JAVA_OPTS=-Xms1G -Xmx2G
     restart: unless-stopped
-    mem_limit: 4g
-    privileged: true
+    stdin_open: true
+    tty: true
+    

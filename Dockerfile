@@ -1,15 +1,24 @@
-FROM python:3.10-slim
+FROM python:3.9-slim
 
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-    git \
-    maven \
-    && rm -rf /var/lib/apt/lists/*
+    apt-get install -y openjdk-17-jre-headless wget && \
+    rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-COPY lsp /app/lsp
-COPY . .
-RUN pip install --no-cache-dir -r requirements.txt "uvicorn[standard]" "python-lsp-server[all]"
-RUN chmod +x /app/lsp/java/jdk-21.0.2/bin/java && \
-    chmod +x /app/lsp/java/jdk-21.0.2/bin/javac
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8001"]
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY download_jdtls.sh .
+RUN chmod +x download_jdtls.sh && ./download_jdtls.sh && \
+    rm download_jdtls.sh
+
+COPY src/ .
+
+ENV PYTHONPATH=/app
+ENV WORKSPACE_DIR=/workspaces
+
+RUN apt-get update && apt-get install -y tini
+ENTRYPOINT ["tini", "--"]
+
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

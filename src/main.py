@@ -23,7 +23,7 @@ app.add_middleware(
 )
 
 jdtls_base_path = "/app/jdtls"
-base_workspace_dir = os.getenv("WORKSPACE_DIR", "/workspaces")
+base_workspace_dir = os.getenv("WORKSPACE_DIR", "/app/workspace")
 
 # Global connection handlers
 active_connections = {}
@@ -59,6 +59,12 @@ async def websocket_endpoint(websocket: WebSocket, interviewId: str, language: s
         base_workspace_dir=base_workspace_dir
     )
     
+    logger.debug(
+        "WebSocket: %s, Interview ID: %s, Language: %s, Launcher JAR: %s, Config Path: %s, Base Workspace Dir: %s",
+        websocket, interviewId, language, launcher_jar, config_path, base_workspace_dir
+    )
+
+
     active_connections[interviewId] = handler
 
     try:

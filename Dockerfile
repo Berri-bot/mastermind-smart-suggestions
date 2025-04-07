@@ -21,4 +21,4 @@ ENV WORKSPACE_DIR=/workspaces
 RUN apt-get update && apt-get install -y tini
 ENTRYPOINT ["tini", "--"]
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8001", "--lifespan", "on"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8001"]

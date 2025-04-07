@@ -41,7 +41,7 @@ def get_jdtls_paths(base_path: str):
 
 launcher_jar, config_path = get_jdtls_paths(jdtls_base_path)
 
-@app.get("/health")
+@app.get("/")
 async def health_check():
     return {"status": "ok", "connections": len(active_connections)}
 

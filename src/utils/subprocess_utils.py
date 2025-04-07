@@ -20,16 +20,21 @@ class SubprocessManager:
         self._notification_callback = callback
 
     async def start(self):
-        self.process = await asyncio.create_subprocess_exec(
-            *self.command,
-            stdin=asyncio.subprocess.PIPE,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE
-        )
-        self._running = True
-        asyncio.create_task(self._read_stdout())
-        asyncio.create_task(self._read_stderr())
-        logger.info(f"Subprocess started with PID {self.process.pid}")
+        try:
+            logger.info(f"Starting subprocess with command: {' '.join(self.command)}")
+            self.process = await asyncio.create_subprocess_exec(
+                *self.command,
+                stdin=asyncio.subprocess.PIPE,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE
+            )
+            self._running = True
+            logger.info(f"Subprocess started with PID {self.process.pid}")
+            asyncio.create_task(self._read_stdout())
+            asyncio.create_task(self._read_stderr())
+        except Exception as e:
+            logger.error(f"Failed to start subprocess: {str(e)}", exc_info=True)
+            raise
 
     async def send(self, message: str):
         if not self._running or not self.process or not self.process.stdin:

@@ -29,19 +29,28 @@ base_workspace_dir = os.getenv("WORKSPACE_DIR", "/workspaces")
 active_connections = {}
 
 def get_jdtls_paths(base_path: str):
-    jar_pattern = os.path.join(base_path, "plugins", "org.eclipse.equinox.launcher_*.jar")
-    jar_files = glob.glob(jar_pattern)
-    if not jar_files:
-        raise FileNotFoundError(f"No JAR file found matching {jar_pattern}")
-    launcher_jar = jar_files[0]
-    config_path = os.path.join(base_path, "config_linux")
-    if not os.path.exists(config_path):
-        raise FileNotFoundError(f"Config directory not found at {config_path}")
-    return launcher_jar, config_path
+    try:
+        jar_pattern = os.path.join(base_path, "plugins", "org.eclipse.equinox.launcher_*.jar")
+        jar_files = glob.glob(jar_pattern)
+        if not jar_files:
+            raise FileNotFoundError(f"No JAR file found matching {jar_pattern}")
+        launcher_jar = jar_files[0]
+        config_path = os.path.join(base_path, "config_linux")
+        if not os.path.exists(config_path):
+            raise FileNotFoundError(f"Config directory not found at {config_path}")
+        return launcher_jar, config_path
+    except Exception as e:
+        logger.error(f"JDTLS path resolution failed: {str(e)}", exc_info=True)
+        raise
 
-launcher_jar, config_path = get_jdtls_paths(jdtls_base_path)
+try:
+    launcher_jar, config_path = get_jdtls_paths(jdtls_base_path)
+    logger.info(f"JDTLS paths initialized - Launcher: {launcher_jar}, Config: {config_path}")
+except Exception as e:
+    logger.critical(f"Fatal JDTLS initialization error: {str(e)}")
+    raise
 
-@app.get("/")
+@app.get("/health")
 async def health_check():
     return {"status": "ok", "connections": len(active_connections)}
 
@@ -83,6 +92,7 @@ async def shutdown():
     logger.info("Shutting down gracefully...")
     for interview_id, handler in list(active_connections.items()):
         try:
+            logger.info(f"Cleaning up {interview_id}")
             await handler.cleanup()
         except Exception as e:
             logger.error(f"Error cleaning up {interview_id}: {str(e)}")
@@ -94,3 +104,12 @@ def handle_signal(signum, frame):
 
 signal.signal(signal.SIGTERM, handle_signal)
 signal.signal(signal.SIGINT, handle_signal)
+
+@app.on_event("startup")
+async def startup_event():
+    logger.info("Server starting up")
+    # Verify workspace directory
+    if not os.path.exists(base_workspace_dir):
+        logger.info(f"Creating workspace directory: {base_workspace_dir}")
+        os.makedirs(base_workspace_dir, exist_ok=True)
+    logger.info(f"Workspace directory verified: {base_workspace_dir}")

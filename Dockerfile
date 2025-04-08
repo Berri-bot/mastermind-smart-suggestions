@@ -1,8 +1,11 @@
 FROM python:3.9-slim
 
 RUN apt-get update && \
-    apt-get install -y openjdk-17-jre-headless wget && \
-    rm -rf /var/lib/apt/lists/*
+apt-get install -y openjdk-17-jdk wget && \
+rm -rf /var/lib/apt/lists/*
+
+# Set JAVA_HOME in the Docker image
+ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
 
 WORKDIR /app
 

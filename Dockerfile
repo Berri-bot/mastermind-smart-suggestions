@@ -1,7 +1,7 @@
 FROM python:3.9-slim
 
 RUN apt-get update && \
-    apt-get install -y openjdk-17-jre-headless wget && \
+    apt-get install -y openjdk-17-jdk-headless wget && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

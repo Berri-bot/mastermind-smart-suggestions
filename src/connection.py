@@ -38,7 +38,6 @@ class ConnectionHandler:
             os.makedirs(self.workspace_path, exist_ok=True)
             self._create_project_files()
 
-            # Log configuration paths
             logger.debug(f"Launcher JAR path: {self.launcher_jar}")
             logger.debug(f"Config path: {self.config_path}")
             logger.debug(f"Workspace path: {self.workspace_path}")
@@ -65,6 +64,11 @@ class ConnectionHandler:
 
             logger.info(f"JDT LS process started for {self.interview_id} with workspace {self.workspace_path}")
 
+            # Log initial output after starting subprocess
+            stdout, stderr = self.subprocess.get_output() if hasattr(self.subprocess, "get_output") else ("", "")
+            logger.debug(f"Initial JDT LS STDOUT:\n{stdout}")
+            logger.debug(f"Initial JDT LS STDERR:\n{stderr}")
+
             init_msg = {
                 "jsonrpc": "2.0",
                 "id": self.next_id,
@@ -85,12 +89,15 @@ class ConnectionHandler:
             }
 
             logger.debug(f"Sending init_msg:\n{json.dumps(init_msg, indent=2)}")
-
             self.next_id += 1
             await self.subprocess.send(json.dumps(init_msg))
 
             try:
                 response = await self.subprocess.receive(init_msg["id"], timeout=30.0)
+                if response:
+                    logger.debug(f"Initialize response received: {response[:200]}...")
+                else:
+                    logger.warning("No response received from JDT LS within 30s")
             except Exception as recv_error:
                 logger.exception(f"Error receiving JDT LS response for {self.interview_id}")
                 stdout, stderr = self.subprocess.get_output() if hasattr(self.subprocess, "get_output") else ("", "")
@@ -126,6 +133,9 @@ class ConnectionHandler:
 
         except Exception as e:
             logger.exception(f"Unexpected error during initialization for {self.interview_id}")
+            stdout, stderr = self.subprocess.get_output() if hasattr(self.subprocess, "get_output") else ("", "")
+            logger.error(f"JDT LS STDOUT on failure:\n{stdout}")
+            logger.error(f"JDT LS STDERR on failure:\n{stderr}")
             raise RuntimeError("JDT LS initialization failed due to an unexpected error") from e
 
     def _create_project_files(self):
@@ -178,6 +188,7 @@ class ConnectionHandler:
         logger.debug(f"Notification from {self.interview_id}: {json.dumps(message)[:200]}...")
         if message.get("method") == "textDocument/publishDiagnostics":
             logger.info(f"Diagnostics for {message['params']['uri']}: {message['params']['diagnostics']}")
+        
         elif message.get("method") == "window/logMessage":
             logger.info(f"JDT LS log: {message['params']['message']}")
         await self.websocket.send_text(json.dumps(message))

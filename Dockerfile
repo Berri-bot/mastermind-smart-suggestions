@@ -1,10 +1,9 @@
 FROM python:3.9-slim
 
 RUN apt-get update && \
-apt-get install -y openjdk-17-jdk wget && \
-rm -rf /var/lib/apt/lists/*
+    apt-get install -y openjdk-17-jdk wget && \
+    rm -rf /var/lib/apt/lists/*
 
-# Set JAVA_HOME in the Docker image
 ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
 
 WORKDIR /app
@@ -24,4 +23,4 @@ ENV WORKSPACE_DIR=/workspaces
 RUN apt-get update && apt-get install -y tini
 ENTRYPOINT ["tini", "--"]
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8001"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8001", "--ws-ping-interval", "20", "--ws-ping-timeout", "60"]

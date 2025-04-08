@@ -73,8 +73,9 @@ class SubprocessManager:
                 data = await self.process.stdout.read(4096)
                 if not data:
                     break
+                logger.debug(f"Received {len(data)} bytes from stdout: {data[:200].decode('utf-8', 'replace')}...")
                 self._buffer.extend(data)
-                logger.debug(f"Read {len(data)} bytes from stdout, buffer size now {len(self._buffer)}")
+                logger.debug(f"Buffer size now {len(self._buffer)}")
                 await self._process_buffer()
             except Exception as e:
                 logger.error(f"Error reading stdout: {str(e)}", exc_info=True)
@@ -143,7 +144,14 @@ class SubprocessManager:
             self.process.kill()
             await self.process.wait()
         except Exception as e:
-            logger.error(f"Error stopping process: {str(e)}", exc_info=True)
+            logger.error(f"Error stoppingtransition process: {str(e)}", exc_info=True)
         finally:
             self.process = None
             logger.info("Subprocess stopped")
+
+    def get_output(self):
+        stdout, stderr = "", ""
+        if self.process:
+            stdout = self.process.stdout.read().decode('utf-8', 'replace') if self.process.stdout else ""
+            stderr = self.process.stderr.read().decode('utf-8', 'replace') if self.process.stderr else ""
+        return stdout, stderr

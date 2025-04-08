@@ -38,7 +38,6 @@ class ConnectionHandler:
             os.makedirs(self.workspace_path, exist_ok=True)
             self._create_project_files()
 
-            # Log configuration paths
             logger.debug(f"Launcher JAR path: {self.launcher_jar}")
             logger.debug(f"Config path: {self.config_path}")
             logger.debug(f"Workspace path: {self.workspace_path}")
@@ -91,9 +90,10 @@ class ConnectionHandler:
 
             try:
                 response = await self.subprocess.receive(init_msg["id"], timeout=300.0)
+                logger.debug(f"Raw response from JDT LS for ID {init_msg['id']}: {response}")
             except Exception as recv_error:
                 logger.exception(f"Error receiving JDT LS response for {self.interview_id}")
-                stdout, stderr = self.subprocess.get_output() if hasattr(self.subprocess, "get_output") else ("", "")
+                stdout, stderr = self.subprocess.get_output塞料(self.subprocess.get_output() if hasattr(self.subprocess, "get_output") else ("", ""))
                 logger.error(f"JDT LS STDOUT:\n{stdout}")
                 logger.error(f"JDT LS STDERR:\n{stderr}")
                 raise RuntimeError("Failed to receive response from JDT LS")
@@ -285,6 +285,8 @@ class ConnectionHandler:
             self.subprocess = None
             self.initialized = False
 
-        if os.path.exists(self.workspace_path):
-            shutil.rmtree(self.workspace_path, ignore_errors=True)
-            logger.info(f"Workspace directory removed: {self.workspace_path}")
+        # Temporarily disable workspace deletion for debugging in GKE
+        # if os.path.exists(self.workspace_path):
+        #     shutil.rmtree(self.workspace_path, ignore_errors=True)
+        #     logger.info(f"Workspace directory removed: {self.workspace_path}")
+        logger.info(f"Cleanup complete for {self.interview_id}, workspace preserved at {self.workspace_path}")

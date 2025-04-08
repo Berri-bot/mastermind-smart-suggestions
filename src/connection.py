@@ -90,7 +90,7 @@ class ConnectionHandler:
             await self.subprocess.send(json.dumps(init_msg))
 
             try:
-                response = await self.subprocess.receive(init_msg["id"])
+                response = await self.subprocess.receive(init_msg["id"], timeout=300.0)
             except Exception as recv_error:
                 logger.exception(f"Error receiving JDT LS response for {self.interview_id}")
                 stdout, stderr = self.subprocess.get_output() if hasattr(self.subprocess, "get_output") else ("", "")

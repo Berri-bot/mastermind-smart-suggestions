@@ -71,7 +71,7 @@ class ConnectionHandler:
                 "method": "initialize",
                 "params": {
                     "processId": None,
-                    "rootUri": f"file://{self.workspace_path}",
+                    "rootUri": f"file://{self.workspace_path}", 
                     "capabilities": {
                         "textDocument": {
                             "synchronization": {"openClose": True, "change": 2, "save": {"includeText": True}},

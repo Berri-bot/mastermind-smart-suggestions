@@ -48,6 +48,7 @@ class ConnectionHandler:
                 "-Dosgi.bundles.defaultStartLevel=4",
                 "-Declipse.product=org.eclipse.jdt.ls.core.product",
                 "-Dlog.level=ALL",
+                "-Djava.net.preferIPv4Stack=true",  # Force stdin/stdout communication
                 "-Xms1G",
                 "-Xmx2G",
                 "-jar", self.launcher_jar,
@@ -93,10 +94,10 @@ class ConnectionHandler:
                 logger.debug(f"Raw response from JDT LS for ID {init_msg['id']}: {response}")
             except Exception as recv_error:
                 logger.exception(f"Error receiving JDT LS response for {self.interview_id}")
-                stdout, stderr = self.subprocess.get_output塞料(self.subprocess.get_output() if hasattr(self.subprocess, "get_output") else ("", ""))
+                stdout, stderr = self.subprocess.get_output() if hasattr(self.subprocess, "get_output") else ("", "")
                 logger.error(f"JDT LS STDOUT:\n{stdout}")
                 logger.error(f"JDT LS STDERR:\n{stderr}")
-                raise RuntimeError("Failed to receive response from JDT LS")
+                raise RuntimeError("Failed to receive response from JDT LS") from recv_error
 
             if response:
                 self.initialized = True
@@ -126,6 +127,9 @@ class ConnectionHandler:
 
         except Exception as e:
             logger.exception(f"Unexpected error during initialization for {self.interview_id}")
+            stdout, stderr = self.subprocess.get_output() if self.subprocess and hasattr(self.subprocess, "get_output") else ("", "")
+            logger.error(f"JDT LS STDOUT on failure:\n{stdout}")
+            logger.error(f"JDT LS STDERR on failure:\n{stderr}")
             raise RuntimeError("JDT LS initialization failed due to an unexpected error") from e
 
     def _create_project_files(self):
@@ -285,8 +289,7 @@ class ConnectionHandler:
             self.subprocess = None
             self.initialized = False
 
-        # Temporarily disable workspace deletion for debugging in GKE
-        # if os.path.exists(self.workspace_path):
-        #     shutil.rmtree(self.workspace_path, ignore_errors=True)
-        #     logger.info(f"Workspace directory removed: {self.workspace_path}")
-        logger.info(f"Cleanup complete for {self.interview_id}, workspace preserved at {self.workspace_path}")
+        # Re-enable cleanup after confirming the fix
+        if os.path.exists(self.workspace_path):
+            shutil.rmtree(self.workspace_path, ignore_errors=True)
+            logger.info(f"Workspace directory removed: {self.workspace_path}")

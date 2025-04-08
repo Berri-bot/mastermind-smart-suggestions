@@ -144,7 +144,7 @@ class SubprocessManager:
             self.process.kill()
             await self.process.wait()
         except Exception as e:
-            logger.error(f"Error stoppingtransition process: {str(e)}", exc_info=True)
+            logger.error(f"Error stopping process: {str(e)}", exc_info=True)
         finally:
             self.process = None
             logger.info("Subprocess stopped")

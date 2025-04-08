@@ -11,3 +11,5 @@ services:
     restart: unless-stopped
     stdin_open: true
     tty: true
+    mem_limit: 4g
+    privileged: true

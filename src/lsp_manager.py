@@ -1,10 +1,10 @@
 import os
 import glob
 import asyncio
-import json
-from typing import Dict, Optional
 from utils.subprocess_utils import SubprocessManager
 import logging
+import json
+from typing import Dict, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +15,8 @@ class LSPManager:
         self.subprocess: Optional[SubprocessManager] = None
         self.workspaces: Dict[str, dict] = {}
         self.lock = asyncio.Lock()
-
+        
+        # Validate JDT LS installation
         jar_pattern = os.path.join(jdtls_base_path, "plugins", "org.eclipse.equinox.launcher_*.jar")
         jar_files = glob.glob(jar_pattern)
         if not jar_files:
@@ -27,6 +28,7 @@ class LSPManager:
             raise FileNotFoundError(f"Config directory not found at {self.config_path}")
 
     async def initialize(self):
+        """Start the JDT LS process"""
         async with self.lock:
             if self.subprocess is not None:
                 return
@@ -53,16 +55,20 @@ class LSPManager:
             await self.subprocess.start()
 
     async def process_message(self, workspace_id: str, message: str) -> Optional[str]:
+        """Process LSP message and return response"""
         try:
             message_obj = json.loads(message)
             method = message_obj.get("method")
             msg_id = message_obj.get("id")
             
+            # Initialize workspace if needed
             if workspace_id not in self.workspaces:
                 await self._init_workspace(workspace_id)
             
+            # Send message to JDT LS
             await self.subprocess.send(message)
             
+            # Return response only for requests (with ID)
             if msg_id is not None:
                 return await self._wait_for_response(msg_id)
             return None
@@ -74,9 +80,11 @@ class LSPManager:
             return self._create_error_response(None, -32603, "Internal error")
 
     async def _init_workspace(self, workspace_id: str):
+        """Initialize a new workspace"""
         workspace_path = os.path.join(self.base_workspace_dir, workspace_id)
         os.makedirs(workspace_path, exist_ok=True)
         
+        # Create default Java file
         java_file = os.path.join(workspace_path, "Main.java")
         if not os.path.exists(java_file):
             with open(java_file, "w") as f:
@@ -89,22 +97,29 @@ class LSPManager:
         self.workspaces[workspace_id] = {"path": workspace_path}
 
     async def _wait_for_response(self, msg_id, timeout=10.0) -> Optional[str]:
+        """Wait for response from JDT LS"""
         if not self.subprocess:
             return None
         return await self.subprocess.receive(msg_id, timeout)
 
     def _create_error_response(self, msg_id, code: int, message: str) -> str:
+        """Create error response"""
         return json.dumps({
             "jsonrpc": "2.0",
             "id": msg_id,
-            "error": {"code": code, "message": message}
+            "error": {
+                "code": code,
+                "message": message
+            }
         })
 
     async def cleanup_workspace(self, workspace_id: str):
+        """Cleanup workspace resources"""
         if workspace_id in self.workspaces:
             del self.workspaces[workspace_id]
 
     async def cleanup(self):
+        """Cleanup all resources"""
         async with self.lock:
             if self.subprocess:
                 await self.subprocess.stop()

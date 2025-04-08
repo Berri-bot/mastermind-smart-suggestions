@@ -1,11 +1,8 @@
 FROM python:3.9-slim
 
 RUN apt-get update && \
-apt-get install -y openjdk-17-jdk wget && \
-rm -rf /var/lib/apt/lists/*
-
-# Set JAVA_HOME in the Docker image
-ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+    apt-get install -y openjdk-17-jre-headless wget && \
+    rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -19,7 +16,7 @@ RUN chmod +x download_jdtls.sh && ./download_jdtls.sh && \
 COPY src/ .
 
 ENV PYTHONPATH=/app
-ENV WORKSPACE_DIR=/workspaces
+ENV WORKSPACE_DIR=app/workspaces
 
 RUN apt-get update && apt-get install -y tini
 ENTRYPOINT ["tini", "--"]

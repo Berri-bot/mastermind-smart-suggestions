@@ -20,21 +20,16 @@ class SubprocessManager:
         self._notification_callback = callback
 
     async def start(self):
-        try:
-            logger.info(f"Starting subprocess with command: {' '.join(self.command)}")
-            self.process = await asyncio.create_subprocess_exec(
-                *self.command,
-                stdin=asyncio.subprocess.PIPE,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE
-            )
-            self._running = True
-            logger.info(f"Subprocess started with PID {self.process.pid}")
-            asyncio.create_task(self._read_stdout())
-            asyncio.create_task(self._read_stderr())
-        except Exception as e:
-            logger.error(f"Failed to start subprocess: {str(e)}", exc_info=True)
-            raise
+        self.process = await asyncio.create_subprocess_exec(
+            *self.command,
+            stdin=asyncio.subprocess.PIPE,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
+        self._running = True
+        asyncio.create_task(self._read_stdout())
+        asyncio.create_task(self._read_stderr())
+        logger.info(f"Subprocess started with PID {self.process.pid}")
 
     async def send(self, message: str):
         if not self._running or not self.process or not self.process.stdin:
@@ -73,9 +68,8 @@ class SubprocessManager:
                 data = await self.process.stdout.read(4096)
                 if not data:
                     break
-                logger.debug(f"Received {len(data)} bytes from stdout: {data[:200].decode('utf-8', 'replace')}...")
                 self._buffer.extend(data)
-                logger.debug(f"Buffer size now {len(self._buffer)}")
+                logger.debug(f"Read {len(data)} bytes from stdout, buffer size now {len(self._buffer)}")
                 await self._process_buffer()
             except Exception as e:
                 logger.error(f"Error reading stdout: {str(e)}", exc_info=True)
@@ -148,10 +142,3 @@ class SubprocessManager:
         finally:
             self.process = None
             logger.info("Subprocess stopped")
-
-    def get_output(self):
-        stdout, stderr = "", ""
-        if self.process:
-            stdout = self.process.stdout.read().decode('utf-8', 'replace') if self.process.stdout else ""
-            stderr = self.process.stderr.read().decode('utf-8', 'replace') if self.process.stderr else ""
-        return stdout, stderr

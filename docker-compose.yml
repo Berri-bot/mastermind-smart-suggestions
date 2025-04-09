@@ -1,15 +1,12 @@
-version: '3.8'
 services:
   lsp-server:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     ports:
       - "8001:8001"
     volumes:
       - ./workspaces:/workspaces
     environment:
-      - JAVA_OPTS=-Xms1G -Xmx2G
-    restart: unless-stopped
-    stdin_open: true
-    tty: true
-    mem_limit: 4g
-    privileged: true
+      - PYTHONPATH=/app
+      - WORKSPACE_DIR=/workspaces

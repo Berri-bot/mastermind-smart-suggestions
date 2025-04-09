@@ -20,7 +20,7 @@ RUN chmod +x download_jdtls.sh && ./download_jdtls.sh && \
 COPY src/ .
 
 ENV PYTHONPATH=/app
-ENV WORKSPACE_DIR=/workspaces
+ENV WORKSPACE_DIR=/workspaces 
 
 RUN apt-get update && apt-get install -y tini
 ENTRYPOINT ["tini", "--"]

@@ -28,7 +28,7 @@ COPY src/ .
 # Set environment variables
 ENV PYTHONPATH=/app
 ENV WORKSPACE_DIR=/workspaces
-ENV JAVA_HOME=/usr/lib/jvm/jdk-21
+ENV JAVA_HOME=/usr/lib/jvm/jdk-21 
 ENV PATH="${JAVA_HOME}/bin:${PATH}"
 
 # Install tini for proper signal handling

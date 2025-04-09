@@ -25,4 +25,4 @@ ENV WORKSPACE_DIR=/workspaces
 RUN apt-get update && apt-get install -y tini
 ENTRYPOINT ["tini", "--"]
 
-CMD ["sh", "-c", "nginx && /app/venv/bin/uvicorn app.main:app --ws-ping-interval 20 --ws-ping-timeout 60 --timeout-keep-alive 120 --host 0.0.0.0 --port 8001"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8001", "--ws-ping-interval", "20", "--ws-ping-timeout", "60", "--timeout-keep-alive", "120"]

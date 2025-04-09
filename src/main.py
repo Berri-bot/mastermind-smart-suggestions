@@ -8,7 +8,6 @@ import glob
 from logger import setup_logging
 import signal
 
-# Setup logging with GCP-compatible format
 setup_logging()
 logger = logging.getLogger(__name__)
 
@@ -23,9 +22,8 @@ app.add_middleware(
 )
 
 jdtls_base_path = "/app/jdtls"
-base_workspace_dir = os.getenv("WORKSPACE_DIR", "/app/workspace")
+base_workspace_dir = os.getenv("WORKSPACE_DIR", "/workspaces")
 
-# Global connection handlers
 active_connections = {}
 
 def get_jdtls_paths(base_path: str):
@@ -59,12 +57,6 @@ async def websocket_endpoint(websocket: WebSocket, interviewId: str, language: s
         base_workspace_dir=base_workspace_dir
     )
     
-    logger.debug(
-        "WebSocket: %s, Interview ID: %s, Language: %s, Launcher JAR: %s, Config Path: %s, Base Workspace Dir: %s",
-        websocket, interviewId, language, launcher_jar, config_path, base_workspace_dir
-    )
-
-
     active_connections[interviewId] = handler
 
     try:

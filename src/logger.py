@@ -23,7 +23,6 @@ class GCPFormatter(logging.Formatter):
 def setup_logging():
     logger = logging.getLogger()
     logger.setLevel(logging.DEBUG)
-    
     handler = logging.StreamHandler(sys.stdout)
     handler.setFormatter(GCPFormatter())
     logger.handlers = [handler]

@@ -4,6 +4,7 @@ import logging
 import re
 from typing import Optional, Dict, Any, Callable
 from logger import setup_logging
+import traceback
 
 setup_logging()
 logger = logging.getLogger(__name__)
@@ -57,7 +58,10 @@ class SubprocessManager:
             response = await asyncio.wait_for(future, timeout)
             logger.debug(f"Received response for ID {msg_id}: {json.dumps(response)[:200]}...")
             return json.dumps(response)
+        except Exception as e:
+            logger.error(traceback.print_exc(e), '---------')
         except asyncio.TimeoutError:
+            logger.error(traceback.print_exc, '------timeout---')
             logger.warning(f"Timeout waiting for response ID {msg_id} after {timeout}s")
             return None
         finally:

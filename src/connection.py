@@ -6,6 +6,7 @@ from typing import Optional
 from fastapi import WebSocket
 from utils.subprocess_utils import SubprocessManager
 from logger import setup_logging
+import traceback
 
 setup_logging()
 logger = logging.getLogger(__name__)
@@ -108,6 +109,7 @@ class ConnectionHandler:
             }
             await self.subprocess.send(json.dumps(did_open_msg))
         else:
+            logger.error(traceback.print_exc, '====error===')
             logger.error(f"Failed to initialize JDT LS for {self.interview_id}: No response")
             raise RuntimeError("JDT LS initialization failed")
 

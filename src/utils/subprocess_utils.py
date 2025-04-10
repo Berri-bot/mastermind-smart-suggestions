@@ -36,7 +36,6 @@ class SubprocessManager:
             self._running = True
             asyncio.create_task(self._read_stdout())
             asyncio.create_task(self._read_stderr())
-            # Check if process dies immediately
             await asyncio.sleep(1)
             if self.process.returncode is not None:
                 logger.error(f"Subprocess exited immediately with code {self.process.returncode}")
@@ -60,7 +59,7 @@ class SubprocessManager:
             logger.error(f"Failed to send message: {str(e)}\n{traceback.format_exc()}")
             raise
 
-    async def receive(self, msg_id: Any, timeout: float = 10.0) -> Optional[str]:
+    async def receive(self, msg_id: Any, timeout: float = 300.0) -> Optional[str]:
         try:
             if not self._running or msg_id is None:
                 logger.warning(f"Cannot receive for ID {msg_id}: Subprocess not running or invalid ID\n{traceback.format_exc()}")
@@ -72,6 +71,8 @@ class SubprocessManager:
             return json.dumps(response)
         except asyncio.TimeoutError:
             logger.warning(f"Timeout waiting for response ID {msg_id} after {timeout}s\n{traceback.format_exc()}")
+            if self.process.returncode is not None:
+                logger.error(f"Subprocess exited with code {self.process.returncode}")
             return None
         except Exception as e:
             logger.error(f"Error receiving for ID {msg_id}: {str(e)}\n{traceback.format_exc()}")
@@ -88,6 +89,7 @@ class SubprocessManager:
                 if not data:
                     logger.debug("No more data from stdout, breaking")
                     break
+                logger.debug(f"JDT LS stdout: {data.decode('utf-8', errors='replace')[:200]}")
                 self._buffer.extend(data)
                 logger.debug(f"Read {len(data)} bytes from stdout, buffer size now {len(self._buffer)}")
                 await self._process_buffer()

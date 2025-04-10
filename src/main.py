@@ -28,6 +28,7 @@ jdtls_base_path = "/app/jdtls"
 base_workspace_dir = os.getenv("WORKSPACE_DIR", "/workspaces")
 active_connections = {}
 
+# main.py
 def get_jdtls_paths(base_path: str):
     try:
         logger.debug(f"Checking JDT LS base path: {base_path}")
@@ -39,7 +40,11 @@ def get_jdtls_paths(base_path: str):
         logger.debug(f"Looking for JAR files with pattern: {jar_pattern}")
         jar_files = glob.glob(jar_pattern)
         if not jar_files:
-            logger.error(f"No JAR file found matching {jar_pattern}")
+            logger.error(f"No JAR file found matching {jar_pattern}. Listing directory contents:")
+            if os.path.exists(os.path.join(base_path, "plugins")):
+                logger.error(f"Contents of {base_path}/plugins: {os.listdir(os.path.join(base_path, 'plugins'))}")
+            else:
+                logger.error(f"Plugins directory not found at {base_path}/plugins")
             raise FileNotFoundError(f"No JAR file found matching {jar_pattern}")
         launcher_jar = jar_files[0]
         logger.debug(f"Found launcher JAR: {launcher_jar}")
@@ -54,7 +59,7 @@ def get_jdtls_paths(base_path: str):
     except Exception as e:
         logger.error(f"Error in get_jdtls_paths: {str(e)}\n{traceback.format_exc()}")
         raise
-
+    
 # Verify environment before starting
 logger.debug(f"Using jdtls_base_path={jdtls_base_path}, base_workspace_dir={base_workspace_dir}")
 if not os.path.exists(base_workspace_dir):

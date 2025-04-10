@@ -11,7 +11,7 @@ RUN apt-get update && apt-get install -y \
     && tar -xzf /tmp/jdk-17.tar.gz -C /usr/lib/jvm \
     && rm /tmp/jdk-17.tar.gz \
     && ln -s /usr/lib/jvm/jdk-17.0.11/bin/java /usr/bin/java \
-    && ln -s /usr/lib/jvm/jdt-17.0.11/bin/javac /usr/bin/javac \
+    && ln -s /usr/lib/jvm/jdk-17.0.11/bin/javac /usr/bin/javac \
     && java -version \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
@@ -25,9 +25,9 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Download and extract JDT LS explicitly
-RUN wget https://download.eclipse.org/jdtls/milestones/1.36.0/jdt-language-server-1.36.0-202405301306.tar.gz -O /tmp/jdtls.tar.gz \
-    && tar -xzf /tmp/jdtls.tar.gz -C /app \
-    && mv /app/jdt-language-server-* /app/jdtls \
+RUN mkdir -p /app/jdtls \
+    && wget https://download.eclipse.org/jdtls/milestones/1.36.0/jdt-language-server-1.36.0-202405301306.tar.gz -O /tmp/jdtls.tar.gz \
+    && tar -xzf /tmp/jdtls.tar.gz -C /app/jdtls \
     && rm /tmp/jdtls.tar.gz \
     && ls -l /app/jdtls/plugins/org.eclipse.equinox.launcher_*.jar \
     && ls -l /app/jdtls/config_linux

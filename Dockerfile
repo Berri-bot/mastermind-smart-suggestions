@@ -1,13 +1,13 @@
 FROM python:3.9-slim-bullseye
 
-# Install prerequisites and Oracle JDK 21
+# Install prerequisites and Oracle JDK 17
 RUN apt-get update && apt-get install -y ca-certificates curl wget tar && \
-    curl -fsSL https://download.oracle.com/java/21/archive/jdk-21_linux-x64_bin.tar.gz -o /tmp/jdk-21.tar.gz && \
+    curl -fsSL https://download.oracle.com/java/17/archive/jdk-17_linux-x64_bin.tar.gz -o /tmp/jdk-17.tar.gz && \
     mkdir -p /usr/lib/jvm && \
-    tar -xzf /tmp/jdk-21.tar.gz -C /usr/lib/jvm && \
-    rm /tmp/jdk-21.tar.gz && \
-    ln -s /usr/lib/jvm/jdk-21/bin/java /usr/bin/java && \
-    ln -s /usr/lib/jvm/jdk-21/bin/javac /usr/bin/javac && \
+    tar -xzf /tmp/jdk-17.tar.gz -C /usr/lib/jvm && \
+    rm /tmp/jdk-17.tar.gz && \
+    ln -s /usr/lib/jvm/jdk-17/bin/java /usr/bin/java && \
+    ln -s /usr/lib/jvm/jdk-17/bin/javac /usr/bin/javac && \
     java -version && \
     rm -rf /var/lib/apt/lists/*
 
@@ -28,7 +28,7 @@ COPY src/ .
 # Set environment variables 
 ENV PYTHONPATH=/app
 ENV WORKSPACE_DIR=/workspaces
-ENV JAVA_HOME=/usr/lib/jvm/jdk-21
+ENV JAVA_HOME=/usr/lib/jvm/jdk-17
 ENV PATH="${JAVA_HOME}/bin:${PATH}"
 
 # Ensure /workspaces is writable

@@ -21,6 +21,7 @@ ENV PATH="${JAVA_HOME}/bin:${PATH}"
 
 WORKDIR /app
 
+# Copy and install Python dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
@@ -32,13 +33,16 @@ RUN mkdir -p /app/jdtls \
     && ls -l /app/jdtls/plugins/org.eclipse.equinox.launcher_*.jar \
     && ls -l /app/jdtls/config_linux
 
+# Copy application source code
 COPY src/ .
 
 ENV PYTHONPATH=/app
 ENV WORKSPACE_DIR=/workspaces
 
+# Create workspace directory with permissive permissions
 RUN mkdir -p /workspaces && chmod 777 /workspaces
 
+# Install tini for proper signal handling
 RUN apt-get update && apt-get install -y tini \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*

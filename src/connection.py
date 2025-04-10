@@ -2,11 +2,12 @@ import json
 import logging
 import os
 import shutil
+import time
 from typing import Optional
 from fastapi import WebSocket
 from utils.subprocess_utils import SubprocessManager
 from logger import setup_logging
-import traceback
+import importlib
 
 setup_logging()
 logger = logging.getLogger(__name__)
@@ -38,6 +39,8 @@ class ConnectionHandler:
         try:
             logger.debug(f"Checking workspace path: {self.workspace_path}")
             os.makedirs(self.workspace_path, exist_ok=True)
+            os.chmod(self.workspace_path, 0o777)  # Ensure permissions
+            time.sleep(3)  # Increased delay to ensure filesystem readiness
             logger.debug(f"Created workspace directory: {self.workspace_path}")
             self._create_project_files()
 
@@ -72,18 +75,11 @@ class ConnectionHandler:
                     "rootUri": f"file://{self.workspace_path}",
                     "capabilities": {
                         "textDocument": {
-                            "synchronization": {
-                                "openClose": True,
-                                "change": 2,
-                                "save": {"includeText": True}
-                            },
+                            "synchronization": {"openClose": True, "change": 2},
                             "completion": {"completionItem": {"snippetSupport": True}},
                             "publishDiagnostics": {"relatedInformation": True}
                         },
-                        "workspace": {
-                            "didChangeConfiguration": {"dynamicRegistration": True},
-                            "workspaceFolders": True
-                        }
+                        "workspace": {"workspaceFolders": True}
                     },
                     "workspaceFolders": [
                         {"uri": f"file://{self.workspace_path}", "name": self.interview_id}
@@ -93,32 +89,19 @@ class ConnectionHandler:
             self.next_id += 1
             logger.debug(f"Sending initialize message: {json.dumps(init_msg)[:200]}...")
             await self.subprocess.send(json.dumps(init_msg))
-            response = await self.subprocess.receive(init_msg["id"], timeout=300.0)  # Match SubprocessManager timeout
+            response = await self.subprocess.receive(init_msg["id"], timeout=30.0)
             if response:
                 self.initialized = True
                 logger.info(f"JDT LS initialized successfully for {self.interview_id}")
                 await self.websocket.send_text(response)
                 await self.subprocess.send(json.dumps({"jsonrpc": "2.0", "method": "initialized", "params": {}}))
-
-                did_open_msg = {
-                    "jsonrpc": "2.0",
-                    "method": "textDocument/didOpen",
-                    "params": {
-                        "textDocument": {
-                            "uri": f"file://{self.workspace_path}/src/Main.java",
-                            "languageId": "java",
-                            "version": 1,
-                            "text": open(f"{self.workspace_path}/src/Main.java", "r").read()
-                        }
-                    }
-                }
-                logger.debug(f"Sending didOpen message: {json.dumps(did_open_msg)[:200]}...")
-                await self.subprocess.send(json.dumps(did_open_msg))
             else:
-                logger.error(f"Failed to initialize JDT LS for {self.interview_id}: No response received after 300s")
+                logger.error(f"Failed to initialize JDT LS for {self.interview_id}: No response received")
+                if self.subprocess.process.returncode is not None:
+                    logger.error(f"JDT LS process exited with code {self.subprocess.process.returncode}")
                 raise RuntimeError("JDT LS initialization failed: No response")
         except Exception as e:
-            logger.error(f"Error in initialize for {self.interview_id}: {str(e)}\n{traceback.format_exc()}")
+            logger.error(f"Error in initialize for {self.interview_id}: {str(e)}\n{importlib.import_module('traceback').format_exc()}")
             raise
 
     def _create_project_files(self):
@@ -126,6 +109,7 @@ class ConnectionHandler:
             src_path = os.path.join(self.workspace_path, "src")
             logger.debug(f"Creating source directory: {src_path}")
             os.makedirs(src_path, exist_ok=True)
+            os.chmod(src_path, 0o777)  # Ensure src directory permissions
             java_file = os.path.join(src_path, "Main.java")
             if not os.path.exists(java_file):
                 with open(java_file, "w") as f:
@@ -135,6 +119,7 @@ class ConnectionHandler:
     }
 }
 """)
+                os.chmod(java_file, 0o777)  # Ensure file permissions
                 logger.debug(f"Created {java_file}")
 
             project_file = os.path.join(self.workspace_path, ".project")
@@ -156,6 +141,7 @@ class ConnectionHandler:
     </natures>
 </projectDescription>
 """)
+                os.chmod(project_file, 0o777)
                 logger.debug(f"Created {project_file}")
 
             classpath_file = os.path.join(self.workspace_path, ".classpath")
@@ -167,9 +153,10 @@ class ConnectionHandler:
     <classpathentry kind="output" path="bin"/>
 </classpath>
 """)
+                os.chmod(classpath_file, 0o777)
                 logger.debug(f"Created {classpath_file}")
         except Exception as e:
-            logger.error(f"Error creating project files for {self.interview_id}: {str(e)}\n{traceback.format_exc()}")
+            logger.error(f"Error creating project files for {self.interview_id}: {str(e)}\n{importlib.import_module('traceback').format_exc()}")
             raise
 
     async def _handle_notification(self, message):
@@ -181,7 +168,7 @@ class ConnectionHandler:
                 logger.info(f"JDT LS log: {message['params']['message']}")
             await self.websocket.send_text(json.dumps(message))
         except Exception as e:
-            logger.error(f"Error handling notification for {self.interview_id}: {str(e)}\n{traceback.format_exc()}")
+            logger.error(f"Error handling notification for {self.interview_id}: {str(e)}\n{importlib.import_module('traceback').format_exc()}")
 
     async def handle_message(self, message_str: str):
         try:
@@ -235,19 +222,19 @@ class ConnectionHandler:
             await self.subprocess.send(message_str)
             if msg_id is not None:
                 logger.debug(f"Awaiting response for ID {msg_id}")
-                response = await self.subprocess.receive(msg_id, timeout=15.0)
+                response = await self.subprocess.receive(msg_id, timeout=30.0)  # Increased timeout
                 if response:
                     logger.debug(f"Sending response for ID {msg_id} to client: {response[:200]}...")
                     await self.websocket.send_text(response)
                 else:
-                    logger.warning(f"No response received for ID {msg_id} within 15s timeout")
+                    logger.warning(f"No response received for ID {msg_id} within 30s timeout")
                     await self.send_error(msg_id, -32603, "No response from JDT LS")
 
         except json.JSONDecodeError as e:
-            logger.error(f"JSON decode error for {self.interview_id}: {str(e)} - Message: {message_str[:200]}\n{traceback.format_exc()}")
+            logger.error(f"JSON decode error for {self.interview_id}: {str(e)} - Message: {message_str[:200]}\n{importlib.import_module('traceback').format_exc()}")
             await self.send_error(None, -32700, f"Parse error: {str(e)}")
         except Exception as e:
-            logger.error(f"Message handling error for {self.interview_id}: {str(e)} - Message: {message_str[:200]}\n{traceback.format_exc()}")
+            logger.error(f"Message handling error for {self.interview_id}: {str(e)} - Message: {message_str[:200]}\n{importlib.import_module('traceback').format_exc()}")
             await self.send_error(msg_id, -32603, f"Internal error: {str(e)}")
 
     async def send_error(self, msg_id, code: int, message: str):
@@ -257,10 +244,10 @@ class ConnectionHandler:
                 "id": msg_id,
                 "error": {"code": code, "message": message}
             }
-            logger.error(f"Sending error for {self.interview_id}: {message}\n{traceback.format_exc()}")
+            logger.error(f"Sending error for {self.interview_id}: {message}")
             await self.websocket.send_text(json.dumps(error))
         except Exception as e:
-            logger.error(f"Error sending error message for {self.interview_id}: {str(e)}\n{traceback.format_exc()}")
+            logger.error(f"Error sending error message for {self.interview_id}: {str(e)}\n{importlib.import_module('traceback').format_exc()}")
 
     async def cleanup(self):
         try:
@@ -281,4 +268,4 @@ class ConnectionHandler:
                 shutil.rmtree(self.workspace_path, ignore_errors=True)
                 logger.info(f"Workspace directory removed: {self.workspace_path}")
         except Exception as e:
-            logger.error(f"Error in cleanup for {self.interview_id}: {str(e)}\n{traceback.format_exc()}")
+            logger.error(f"Error in cleanup for {self.interview_id}: {str(e)}\n{importlib.import_module('traceback').format_exc()}")

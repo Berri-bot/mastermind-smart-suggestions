@@ -7,6 +7,7 @@ import signal
 import os
 import glob
 import traceback
+import subprocess
 
 from logger import setup_logging
 
@@ -28,18 +29,46 @@ base_workspace_dir = os.getenv("WORKSPACE_DIR", "/workspaces")
 active_connections = {}
 
 def get_jdtls_paths(base_path: str):
-    jar_pattern = os.path.join(base_path, "plugins", "org.eclipse.equinox.launcher_*.jar")
-    jar_files = glob.glob(jar_pattern)
-    if not jar_files:
-        logger.error(f"No JAR file found matching {jar_pattern}\n{traceback.format_exc()}")
-        raise FileNotFoundError(f"No JAR file found matching {jar_pattern}")
-    launcher_jar = jar_files[0]
-    config_path = os.path.join(base_path, "config_linux")
-    if not os.path.exists(config_path):
-        logger.error(f"Config directory not found at {config_path}\n{traceback.format_exc()}")
-        raise FileNotFoundError(f"Config directory not found at {config_path}")
-    logger.debug(f"JDT LS paths resolved: launcher_jar={launcher_jar}, config_path={config_path}")
-    return launcher_jar, config_path
+    try:
+        logger.debug(f"Checking JDT LS base path: {base_path}")
+        if not os.path.exists(base_path):
+            logger.error(f"JDT LS base path does not exist: {base_path}")
+            raise FileNotFoundError(f"JDT LS base path does not exist: {base_path}")
+        
+        jar_pattern = os.path.join(base_path, "plugins", "org.eclipse.equinox.launcher_*.jar")
+        logger.debug(f"Looking for JAR files with pattern: {jar_pattern}")
+        jar_files = glob.glob(jar_pattern)
+        if not jar_files:
+            logger.error(f"No JAR file found matching {jar_pattern}")
+            raise FileNotFoundError(f"No JAR file found matching {jar_pattern}")
+        launcher_jar = jar_files[0]
+        logger.debug(f"Found launcher JAR: {launcher_jar}")
+
+        config_path = os.path.join(base_path, "config_linux")
+        logger.debug(f"Checking config path: {config_path}")
+        if not os.path.exists(config_path):
+            logger.error(f"Config directory not found at {config_path}")
+            raise FileNotFoundError(f"Config directory not found at {config_path}")
+        
+        return launcher_jar, config_path
+    except Exception as e:
+        logger.error(f"Error in get_jdtls_paths: {str(e)}\n{traceback.format_exc()}")
+        raise
+
+# Verify environment before starting
+logger.debug(f"Using jdtls_base_path={jdtls_base_path}, base_workspace_dir={base_workspace_dir}")
+if not os.path.exists(base_workspace_dir):
+    logger.warning(f"Base workspace directory does not exist, creating: {base_workspace_dir}")
+    os.makedirs(base_workspace_dir, exist_ok=True)
+try:
+    java_version = subprocess.check_output(["java", "-version"], stderr=subprocess.STDOUT).decode()
+    logger.debug(f"Java version: {java_version.strip()}")
+except subprocess.CalledProcessError as e:
+    logger.error(f"Java not found or failed to run: {str(e)}\n{traceback.format_exc()}")
+    raise RuntimeError("Java is not installed or not executable")
+except FileNotFoundError:
+    logger.error("Java command not found in PATH\n{traceback.format_exc()}")
+    raise RuntimeError("Java is not installed")
 
 launcher_jar, config_path = get_jdtls_paths(jdtls_base_path)
 

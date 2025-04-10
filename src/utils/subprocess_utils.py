@@ -32,9 +32,15 @@ class SubprocessManager:
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE
             )
+            logger.debug(f"Subprocess created with PID {self.process.pid}")
             self._running = True
             asyncio.create_task(self._read_stdout())
             asyncio.create_task(self._read_stderr())
+            # Check if process dies immediately
+            await asyncio.sleep(1)
+            if self.process.returncode is not None:
+                logger.error(f"Subprocess exited immediately with code {self.process.returncode}")
+                raise RuntimeError(f"Subprocess failed to start, exit code: {self.process.returncode}")
             logger.info(f"Subprocess started with PID {self.process.pid}")
         except Exception as e:
             logger.error(f"Error starting subprocess: {str(e)}\n{traceback.format_exc()}")
@@ -80,6 +86,7 @@ class SubprocessManager:
             while self._running and self.process and not self.process.stdout.at_eof():
                 data = await self.process.stdout.read(4096)
                 if not data:
+                    logger.debug("No more data from stdout, breaking")
                     break
                 self._buffer.extend(data)
                 logger.debug(f"Read {len(data)} bytes from stdout, buffer size now {len(self._buffer)}")
@@ -137,7 +144,8 @@ class SubprocessManager:
             while self._running and self.process and not self.process.stderr.at_eof():
                 line = await self.process.stderr.readline()
                 if line:
-                    logger.warning(f"JDT LS stderr: {line.decode('utf-8').strip()}")
+                    stderr_line = line.decode('utf-8').strip()
+                    logger.warning(f"JDT LS stderr: {stderr_line}")
         except Exception as e:
             logger.error(f"Error reading stderr: {str(e)}\n{traceback.format_exc()}")
 

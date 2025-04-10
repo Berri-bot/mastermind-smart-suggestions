@@ -36,6 +36,7 @@ class ConnectionHandler:
 
     async def initialize(self):
         try:
+            logger.debug(f"Checking workspace path: {self.workspace_path}")
             os.makedirs(self.workspace_path, exist_ok=True)
             logger.debug(f"Created workspace directory: {self.workspace_path}")
             self._create_project_files()
@@ -123,6 +124,7 @@ class ConnectionHandler:
     def _create_project_files(self):
         try:
             src_path = os.path.join(self.workspace_path, "src")
+            logger.debug(f"Creating source directory: {src_path}")
             os.makedirs(src_path, exist_ok=True)
             java_file = os.path.join(src_path, "Main.java")
             if not os.path.exists(java_file):

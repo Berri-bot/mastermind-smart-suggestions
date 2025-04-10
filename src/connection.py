@@ -93,7 +93,7 @@ class ConnectionHandler:
             self.next_id += 1
             logger.debug(f"Sending initialize message: {json.dumps(init_msg)[:200]}...")
             await self.subprocess.send(json.dumps(init_msg))
-            response = await self.subprocess.receive(init_msg["id"], timeout=30.0)
+            response = await self.subprocess.receive(init_msg["id"], timeout=300.0)  # Match SubprocessManager timeout
             if response:
                 self.initialized = True
                 logger.info(f"JDT LS initialized successfully for {self.interview_id}")
@@ -115,8 +115,8 @@ class ConnectionHandler:
                 logger.debug(f"Sending didOpen message: {json.dumps(did_open_msg)[:200]}...")
                 await self.subprocess.send(json.dumps(did_open_msg))
             else:
-                logger.error(f"Failed to initialize JDT LS for {self.interview_id}: No response\n{traceback.format_exc()}")
-                raise RuntimeError("JDT LS initialization failed")
+                logger.error(f"Failed to initialize JDT LS for {self.interview_id}: No response received after 300s")
+                raise RuntimeError("JDT LS initialization failed: No response")
         except Exception as e:
             logger.error(f"Error in initialize for {self.interview_id}: {str(e)}\n{traceback.format_exc()}")
             raise

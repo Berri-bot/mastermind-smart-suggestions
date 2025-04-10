@@ -11,49 +11,39 @@ RUN apt-get update && apt-get install -y \
     && tar -xzf /tmp/jdk-17.tar.gz -C /usr/lib/jvm \
     && rm /tmp/jdk-17.tar.gz \
     && ln -s /usr/lib/jvm/jdk-17.0.11/bin/java /usr/bin/java \
-    && ln -s /usr/lib/jvm/jdk-17.0.11/bin/javac /usr/bin/javac \
+    && ln -s /usr/lib/jvm/jdt-17.0.11/bin/javac /usr/bin/javac \
     && java -version \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Set JAVA_HOME and PATH early for consistency
 ENV JAVA_HOME=/usr/lib/jvm/jdk-17.0.11
 ENV PATH="${JAVA_HOME}/bin:${PATH}"
 
 WORKDIR /app
 
-# Copy and install Python requirements
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy and run the JDT LS download script
-COPY download_jdtls.sh .
-RUN chmod +x download_jdtls.sh \
-    && ./download_jdtls.sh \
-    && rm download_jdtls.sh \
+# Download and extract JDT LS explicitly
+RUN wget https://download.eclipse.org/jdtls/milestones/1.36.0/jdt-language-server-1.36.0-202405301306.tar.gz -O /tmp/jdtls.tar.gz \
+    && tar -xzf /tmp/jdtls.tar.gz -C /app \
+    && mv /app/jdt-language-server-* /app/jdtls \
+    && rm /tmp/jdtls.tar.gz \
     && ls -l /app/jdtls/plugins/org.eclipse.equinox.launcher_*.jar \
     && ls -l /app/jdtls/config_linux
 
-# Copy application source code
 COPY src/ .
 
-# Set environment variables
 ENV PYTHONPATH=/app
 ENV WORKSPACE_DIR=/workspaces
 
-# Ensure /workspaces is writable
 RUN mkdir -p /workspaces && chmod 777 /workspaces
 
-# Install tini for proper signal handling
 RUN apt-get update && apt-get install -y tini \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Expose port
 EXPOSE 8001
 
-# Use tini as entrypoint
 ENTRYPOINT ["tini", "--"]
-
-# Run the application with uvicorn
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8001", "--ws-ping-interval", "20", "--ws-ping-timeout", "60"]

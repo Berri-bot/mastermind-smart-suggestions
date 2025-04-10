@@ -28,7 +28,6 @@ jdtls_base_path = "/app/jdtls"
 base_workspace_dir = os.getenv("WORKSPACE_DIR", "/workspaces")
 active_connections = {}
 
-# main.py
 def get_jdtls_paths(base_path: str):
     try:
         logger.debug(f"Checking JDT LS base path: {base_path}")
@@ -59,8 +58,7 @@ def get_jdtls_paths(base_path: str):
     except Exception as e:
         logger.error(f"Error in get_jdtls_paths: {str(e)}\n{traceback.format_exc()}")
         raise
-    
-# Verify environment before starting
+
 logger.debug(f"Using jdtls_base_path={jdtls_base_path}, base_workspace_dir={base_workspace_dir}")
 if not os.path.exists(base_workspace_dir):
     logger.warning(f"Base workspace directory does not exist, creating: {base_workspace_dir}")

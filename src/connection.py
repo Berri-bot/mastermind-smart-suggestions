@@ -7,6 +7,7 @@ from fastapi import WebSocket
 from utils.subprocess_utils import SubprocessManager
 from logger import setup_logging
 import traceback
+import asyncio
 
 setup_logging()
 logger = logging.getLogger(__name__)

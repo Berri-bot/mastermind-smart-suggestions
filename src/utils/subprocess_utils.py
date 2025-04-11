@@ -90,6 +90,9 @@ class SubprocessManager:
                     break
                 self._buffer.extend(data)
                 logger.debug(f"Read {len(data)} bytes from stdout, buffer size now {len(self._buffer)}")
+                # Log raw stdout to file
+                with open("/tmp/jdtls_stdout.log", "a") as f:
+                    f.write(f"{data.decode('utf-8', 'replace')}\n")
                 await self._process_buffer()
         except Exception as e:
             logger.error(f"Error reading stdout: {str(e)}\n{traceback.format_exc()}")
@@ -145,7 +148,10 @@ class SubprocessManager:
                 line = await self.process.stderr.readline()
                 if line:
                     stderr_line = line.decode('utf-8').strip()
-                    logger.warning(f"JDT LS stderr: {stderr_line}")
+                    logger.error(f"JDT LS stderr: {stderr_line}")
+                    # Log stderr to file
+                    with open("/tmp/jdtls_stderr.log", "a") as f:
+                        f.write(f"{stderr_line}\n")
         except Exception as e:
             logger.error(f"Error reading stderr: {str(e)}\n{traceback.format_exc()}")
 

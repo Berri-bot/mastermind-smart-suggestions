@@ -33,38 +33,50 @@ class LSPManager:
         logger.debug(f"LSPManager initialized with launcher_jar={self.launcher_jar}, config_path={self.config_path}")
 
     async def initialize(self):
-        try:
-            async with self.lock:
-                if self.subprocess is not None:
-                    logger.debug("Subprocess already initialized, skipping")
-                    return
+        max_retries = 3
+        retry_delay = 5.0
+        for attempt in range(max_retries):
+            try:
+                async with self.lock:
+                    if self.subprocess is not None:
+                        logger.debug("Subprocess already initialized, skipping")
+                        return
 
-                os.makedirs(self.base_workspace_dir, exist_ok=True)
-                logger.debug(f"Created base workspace directory: {self.base_workspace_dir}")
-                
-                cmd = [
-                    "java",
-                    "-Declipse.application=org.eclipse.jdt.ls.core.id1",
-                    "-Dosgi.bundles.defaultStartLevel=4",
-                    "-Declipse.product=org.eclipse.jdt.ls.core.product",
-                    "-Dlog.level=ALL",
-                    "-Xms1G",
-                    "-Xmx2G",
-                    "-jar", self.launcher_jar,
-                    "-configuration", self.config_path,
-                    "-data", self.base_workspace_dir,
-                    "--add-modules=ALL-SYSTEM",
-                    "--add-opens", "java.base/java.util=ALL-UNNAMED",
-                    "--add-opens", "java.base/java.lang=ALL-UNNAMED"
-                ]
-                logger.debug(f"Starting JDT LS with command: {' '.join(cmd)}")
+                    os.makedirs(self.base_workspace_dir, exist_ok=True)
+                    logger.debug(f"Created base workspace directory: {self.base_workspace_dir}")
+                    
+                    cmd = [
+                        "java",
+                        "-Declipse.application=org.eclipse.jdt.ls.core.id1",
+                        "-Dosgi.bundles.defaultStartLevel=4",
+                        "-Declipse.product=org.eclipse.jdt.ls.core.product",
+                        "-Dlog.level=ALL",
+                        "-Xms1G",
+                        "-Xmx2G",
+                        "-jar", self.launcher_jar,
+                        "-configuration", self.config_path,
+                        "-data", self.base_workspace_dir,
+                        "--add-modules=ALL-SYSTEM",
+                        "--add-opens", "java.base/java.util=ALL-UNNAMED",
+                        "--add-opens", "java.base/java.lang=ALL-UNNAMED"
+                    ]
+                    logger.debug(f"Starting JDT LS with command: {' '.join(cmd)}")
 
-                self.subprocess = SubprocessManager(cmd)
-                await self.subprocess.start()
-                logger.info(f"JDT LS process started with workspace {self.base_workspace_dir}")
-        except Exception as e:
-            logger.error(f"Error in initialize: {str(e)}\n{traceback.format_exc()}")
-            raise
+                    self.subprocess = SubprocessManager(cmd)
+                    await self.subprocess.start()
+                    logger.info(f"JDT LS process started with workspace {self.base_workspace_dir}")
+                    return  # Success
+            except Exception as e:
+                logger.error(f"Attempt {attempt + 1} failed: {str(e)}\n{traceback.format_exc()}")
+                if self.subprocess:
+                    await self.subprocess.stop()
+                    self.subprocess = None
+                if attempt < max_retries - 1:
+                    logger.info(f"Retrying initialization after {retry_delay}s")
+                    await asyncio.sleep(retry_delay)
+                else:
+                    logger.error(f"All {max_retries} attempts failed")
+                    raise RuntimeError(f"JDT LS initialization failed after {max_retries} attempts: {str(e)}")
 
     async def process_message(self, workspace_id: str, message: str) -> Optional[str]:
         try:
@@ -105,7 +117,8 @@ class LSPManager:
     public static void main(String[] args) {
         System.out.println("Hello, World!");
     }
-}""")
+}
+""")
                 logger.debug(f"Created default Java file: {java_file}")
             
             self.workspaces[workspace_id] = {"path": workspace_path}
@@ -114,7 +127,7 @@ class LSPManager:
             logger.error(f"Error initializing workspace {workspace_id}: {str(e)}\n{traceback.format_exc()}")
             raise
 
-    async def _wait_for_response(self, msg_id, timeout=10.0) -> Optional[str]:
+    async def _wait_for_response(self, msg_id, timeout=15.0) -> Optional[str]:
         try:
             if not self.subprocess:
                 logger.error(f"No subprocess available for response ID {msg_id}\n{traceback.format_exc()}")

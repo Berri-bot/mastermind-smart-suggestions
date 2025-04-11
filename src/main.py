@@ -55,21 +55,29 @@ def get_jdtls_paths(base_path: str):
         logger.error(f"Error in get_jdtls_paths: {str(e)}\n{traceback.format_exc()}")
         raise
 
-# Verify environment before starting
-logger.debug(f"Using jdtls_base_path={jdtls_base_path}, base_workspace_dir={base_workspace_dir}")
-if not os.path.exists(base_workspace_dir):
-    logger.warning(f"Base workspace directory does not exist, creating: {base_workspace_dir}")
-    os.makedirs(base_workspace_dir, exist_ok=True)
-try:
-    java_version = subprocess.check_output(["java", "-version"], stderr=subprocess.STDOUT).decode()
-    logger.debug(f"Java version: {java_version.strip()}")
-except subprocess.CalledProcessError as e:
-    logger.error(f"Java not found or failed to run: {str(e)}\n{traceback.format_exc()}")
-    raise RuntimeError("Java is not installed or not executable")
-except FileNotFoundError:
-    logger.error("Java command not found in PATH\n{traceback.format_exc()}")
-    raise RuntimeError("Java is not installed")
+def verify_environment():
+    try:
+        # Verify Java
+        java_version = subprocess.check_output(["java", "-version"], stderr=subprocess.STDOUT).decode()
+        logger.info(f"Java version: {java_version.strip()}")
+        
+        # Verify JDT LS files
+        launcher_jar, config_path = get_jdtls_paths(jdtls_base_path)
+        logger.info(f"JDT LS launcher: {launcher_jar}, config: {config_path}")
+        
+        # Verify workspace directory
+        if not os.access(base_workspace_dir, os.W_OK):
+            logger.error(f"Workspace directory not writable: {base_workspace_dir}")
+            raise RuntimeError(f"Workspace directory not writable: {base_workspace_dir}")
+        logger.info(f"Workspace directory verified: {base_workspace_dir}")
+    except Exception as e:
+        logger.error(f"Environment verification failed: {str(e)}\n{traceback.format_exc()}")
+        raise
 
+# Verify environment before starting
+verify_environment()
+
+# Initialize JDT LS paths
 launcher_jar, config_path = get_jdtls_paths(jdtls_base_path)
 
 @app.get("/")

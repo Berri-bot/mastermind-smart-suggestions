@@ -38,6 +38,10 @@ RUN mkdir -p /workspaces && chmod 777 /workspaces
 RUN apt-get update && apt-get install -y tini && \
     rm -rf /var/lib/apt/lists/*
 
+# Health check to verify Java and JDT LS
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD java -version && test -f /app/jdtls/plugins/org.eclipse.equinox.launcher_*.jar || exit 1
+
 # Use tini as entrypoint
 ENTRYPOINT ["tini", "--"]
 

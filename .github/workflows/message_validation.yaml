@@ -1,0 +1,145 @@
+name: Commit Message Validation
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches-ignore:
+      - '**'
+      
+
+jobs:
+  validate-commit-messages:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Validate commit messages
+        run: |
+          echo "Validating commit messages..."
+          
+          # Get commits in this PR or push
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            # For PR: get commits between base and head
+            COMMITS=$(git rev-list ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }})
+          else
+            # For push: get commits in this push
+            COMMITS=$(git rev-list ${{ github.event.before }}..${{ github.event.after }})
+          fi
+          
+          echo "Commits to validate:"
+          echo "$COMMITS"
+          
+          # Define valid commit message patterns (Conventional Commits)
+          VALID_PATTERNS=(
+            "^feat(\(.+\))?: .{1,50}"          # feat: add new feature
+            "^fix(\(.+\))?: .{1,50}"           # fix: bug fix
+            "^docs(\(.+\))?: .{1,50}"          # docs: documentation
+            "^style(\(.+\))?: .{1,50}"         # style: formatting
+            "^refactor(\(.+\))?: .{1,50}"      # refactor: code restructure
+            "^test(\(.+\))?: .{1,50}"          # test: add tests
+            "^chore(\(.+\))?: .{1,50}"         # chore: maintenance
+            "^perf(\(.+\))?: .{1,50}"          # perf: performance improvement
+            "^ci(\(.+\))?: .{1,50}"            # ci: CI/CD changes
+            "^build(\(.+\))?: .{1,50}"         # build: build system
+            "^revert(\(.+\))?: .{1,50}"        # revert: revert changes
+          )
+          
+          INVALID_COMMITS=()
+          TOTAL_COMMITS=0
+          
+          # Validate each commit
+          for commit in $COMMITS; do
+            if [ -z "$commit" ]; then
+              continue
+            fi
+            
+            TOTAL_COMMITS=$((TOTAL_COMMITS + 1))
+            COMMIT_MSG=$(git log --format=%B -n 1 $commit | head -1)
+            echo "Checking commit $commit: '$COMMIT_MSG'"
+            
+            # Skip merge commits
+            if [[ $COMMIT_MSG =~ ^Merge.* ]]; then
+              echo "  ⏭️  Skipping merge commit"
+              continue
+            fi
+            
+            # Check if commit message matches any valid pattern
+            VALID=false
+            for pattern in "${VALID_PATTERNS[@]}"; do
+              if [[ $COMMIT_MSG =~ $pattern ]]; then
+                VALID=true
+                echo "  ✅ Valid: matches pattern '$pattern'"
+                break
+              fi
+            done
+            
+            if [ "$VALID" = false ]; then
+              echo "  ❌ Invalid commit message: '$COMMIT_MSG'"
+              INVALID_COMMITS+=("$commit: $COMMIT_MSG")
+            fi
+          done
+          
+          echo ""
+          echo "Validation Summary:"
+          echo "Total commits checked: $TOTAL_COMMITS"
+          echo "Invalid commits found: ${#INVALID_COMMITS[@]}"
+          
+          # If there are invalid commits, fail the workflow
+          if [ ${#INVALID_COMMITS[@]} -gt 0 ]; then
+            echo ""
+            echo "❌ Commit message validation FAILED!"
+            echo ""
+            echo "Invalid commit messages found:"
+            for invalid in "${INVALID_COMMITS[@]}"; do
+              echo "  • $invalid"
+            done
+            echo ""
+            echo "Valid commit message format (Conventional Commits):"
+            echo "  • feat: add new user authentication"
+            echo "  • fix: resolve login bug"
+            echo "  • docs: update API documentation"
+            echo "  • style: fix code formatting"
+            echo "  • refactor: restructure auth module"
+            echo "  • test: add unit tests for login"
+            echo "  • chore: update dependencies"
+            echo "  • perf: improve database queries"
+            echo "  • ci: update GitHub Actions workflow"
+            echo "  • build: update webpack config"
+            echo "  • revert: revert previous changes"
+            echo ""
+            echo "Rules:"
+            echo "  • Use lowercase type (feat, fix, docs, etc.)"
+            echo "  • Add colon and space after type"
+            echo "  • Use imperative mood (add, fix, update)"
+            echo "  • Keep first line under 50 characters"
+            echo "  • Optional scope in parentheses: feat(auth): add login"
+            echo ""
+            echo "Examples:"
+            echo "  ✅ feat: add user registration form"
+            echo "  ✅ fix(auth): resolve token expiration issue"
+            echo "  ✅ docs: update installation guide"
+            echo "  ❌ Added new feature"
+            echo "  ❌ Fix bug"
+            echo "  ❌ Updated documentation"
+            
+            exit 1
+          else
+            echo "✅ All commit messages are valid!"
+          fi
+
+      - name: Comment on PR - Invalid commit messages
+        if: failure() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: `❌ **Invalid Commit Messages Found**\n\nYour commits do not follow the required Conventional Commits format.\n\n**Required format:**\n\`type: description\` or \`type(scope): description\`\n\n**Valid types:** feat, fix, docs, style, refactor, test, chore, perf, ci, build, revert\n\n**Examples:**\n• \`feat: add user authentication\`\n• \`fix: resolve login bug\`\n• \`docs: update API documentation\`\n\n**Rules:**\n• Use lowercase type\n• Keep description under 50 characters\n• Use imperative mood (add, fix, update)\n\nPlease amend your commit messages or create new commits with proper format.`
+            });

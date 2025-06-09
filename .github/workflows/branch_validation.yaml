@@ -1,0 +1,91 @@
+name: Branch Name Validation
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches-ignore:
+      - main
+    
+jobs:
+  validate-branch-name:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check branch name
+        run: |
+          echo "Validating branch name: ${{ github.head_ref || github.ref_name }}"
+          
+          # Get branch name (works for both PR and push events)
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            BRANCH_NAME="${{ github.head_ref }}"
+          else
+            BRANCH_NAME="${{ github.ref_name }}"
+          fi
+          
+          echo "Branch name to validate: $BRANCH_NAME"
+          
+          # valid branch name patterns
+          VALID_PATTERNS=(
+            "^feature/[a-z0-9-]+$"
+            "^bugfix/[a-z0-9-]+$"
+            "^hotfix/[a-z0-9-]+$"
+            "^release/[0-9]+\\.[0-9]+\\.[0-9]+$"
+            "^chore/[a-z0-9-]+$"
+            "^docs/[a-z0-9-]+$"
+            "^test/[a-z0-9-]+$"
+            "^refactor/[a-z0-9-]+$"
+          )
+          
+          # Check if branch name matches any valid pattern
+          VALID=false
+          for pattern in "${VALID_PATTERNS[@]}"; do
+            if [[ $BRANCH_NAME =~ $pattern ]]; then
+              VALID=true
+              echo "✅ Branch name '$BRANCH_NAME' matches pattern: $pattern"
+              break
+            fi
+          done
+          
+          if [ "$VALID" = false ]; then
+            echo "❌ Invalid branch name: $BRANCH_NAME"
+            echo ""
+            echo "Branch name must follow one of these patterns:"
+            echo "  • feature/your-feature-name"
+            echo "  • bugfix/your-bug-description" 
+            echo "  • hotfix/your-hotfix-name"
+            echo "  • release/1.2.3"
+            echo "  • chore/your-task-name"
+            echo "  • docs/your-doc-update"
+            echo "  • test/your-test-description"
+            echo "  • refactor/your-refactor-name"
+            echo ""
+            echo "Rules:"
+            echo "  • Use lowercase letters, numbers, and hyphens only"
+            echo "  • No spaces or special characters"
+            echo "  • Must start with a valid prefix"
+            echo ""
+            echo "Examples:"
+            echo "  ✅ feature/user-authentication"
+            echo "  ✅ bugfix/login-error"
+            echo "  ✅ hotfix/security-patch"
+            echo "  ❌ Feature/UserAuth"
+            echo "  ❌ fix_login_bug"
+            echo "  ❌ my-random-branch"
+            
+            exit 1
+          else
+            echo "✅ Branch name validation passed!"
+          fi
+          
+      - name: Comment on PR - Invalid branch name
+        if: failure() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const branchName = '${{ github.head_ref }}';
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: `❌ **Invalid Branch Name: ${branchName}**\n\nYour branch name does not follow the required naming convention.\n\n**Valid patterns:** feature/name, bugfix/name, hotfix/name, release/1.2.3, chore/name, docs/name, test/name, refactor/name\n\n**Rules:** Use lowercase letters, numbers, and hyphens only. No spaces or special characters.\n\nPlease rename your branch and create a new PR.`
+            });
